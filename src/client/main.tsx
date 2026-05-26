@@ -1,0 +1,18 @@
+/**
+ * main.tsx
+ * React entry point — mounts the App into #root.
+ */
+
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './style.css';
+import { App } from './App.js';
+
+const rootEl = document.getElementById('root');
+if (!rootEl) throw new Error('No #root element found in index.html');
+
+createRoot(rootEl).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

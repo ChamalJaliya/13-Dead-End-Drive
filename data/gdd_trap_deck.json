@@ -1,0 +1,86 @@
+{
+  "trap_deck": [
+    {
+      "card_id": "TRAP_01",
+      "name": "The Chandelier",
+      "type": "SPECIFIC_TRAP",
+      "target_trap_id": "CHANDELIER",
+      "playable_timing": "ON_PAWN_LAND",
+      "auto_play": false,
+      "quantity": 3
+    },
+    {
+      "card_id": "TRAP_02",
+      "name": "The Bookcase",
+      "type": "SPECIFIC_TRAP",
+      "target_trap_id": "BOOKCASE",
+      "playable_timing": "ON_PAWN_LAND",
+      "auto_play": false,
+      "quantity": 3
+    },
+    {
+      "card_id": "TRAP_03",
+      "name": "Suit of Armor",
+      "type": "SPECIFIC_TRAP",
+      "target_trap_id": "SUIT_OF_ARMOR",
+      "playable_timing": "ON_PAWN_LAND",
+      "auto_play": false,
+      "quantity": 3
+    },
+    {
+      "card_id": "TRAP_04",
+      "name": "The Stairs",
+      "type": "SPECIFIC_TRAP",
+      "target_trap_id": "STAIRS",
+      "playable_timing": "ON_PAWN_LAND",
+      "auto_play": false,
+      "quantity": 3
+    },
+    {
+      "card_id": "TRAP_05",
+      "name": "Fireplace Chimney",
+      "type": "SPECIFIC_TRAP",
+      "target_trap_id": "FIREPLACE",
+      "playable_timing": "ON_PAWN_LAND",
+      "auto_play": false,
+      "quantity": 3
+    },
+    {
+      "card_id": "WILD_01",
+      "name": "Any Trap",
+      "type": "WILD_TRAP",
+      "target_trap_id": null,
+      "playable_timing": "ON_PAWN_LAND",
+      "auto_play": false,
+      "quantity": 2
+    },
+    {
+      "card_id": "STATE_01",
+      "name": "Change Portrait",
+      "type": "STATE_CHANGE",
+      "target_trap_id": null,
+      "playable_timing": "TURN_START_OR_END",
+      "auto_play": false,
+      "quantity": 5
+    },
+    {
+      "card_id": "STATE_02",
+      "name": "Secret Passage",
+      "type": "MOVEMENT_OVERRIDE",
+      "target_trap_id": null,
+      "playable_timing": "DURING_MOVEMENT",
+      "auto_play": false,
+      "quantity": 3
+    },
+    {
+      "card_id": "STATE_03",
+      "name": "Detective",
+      "type": "FORCE_PLAY",
+      "target_trap_id": null,
+      "playable_timing": "IMMEDIATE_ON_DRAW",
+      "auto_play": true,
+      "quantity": 4
+    }
+  ],
+  "total_cards": 29
+}

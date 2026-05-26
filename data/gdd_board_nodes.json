@@ -1,0 +1,27 @@
+{
+  "board_dimensions": { "columns": 21, "rows": 15 },
+  "active_squares_total": 315,
+  "cell_id_format": "algebraic A1–U15 (column letter + row number, row 1 at bottom)",
+  "implementation_status": "Implemented in src/engine/boardDefinition.ts as GRID_21X15",
+  "board_version": "GRID_21X15",
+  "detective_track_steps": 10,
+  "detective_note": "Slot 10 = at front door (K1). Engine: DETECTIVE_TRACK_MAX_STEPS = 10",
+  "special_cells": {
+    "start_chairs": ["J5", "J6", "J7", "J8", "J9", "K5", "K9", "L5", "L6", "L7", "L8", "L9"],
+    "exit_doorway": "K1",
+    "secret_passage_spaces": [],
+    "trap_card_draw_spaces": [],
+    "note_trap_draw": "Trap cards are drawn only when landing on skull TRAP_ZONE cells, not from board draw squares"
+  },
+  "trap_mechanisms": {
+    "CHANDELIER": { "trigger_square": "R11" },
+    "BOOKCASE": { "trigger_square": "R4" },
+    "SUIT_OF_ARMOR": { "trigger_square": "D3" },
+    "FIREPLACE": { "trigger_square": "K12" },
+    "STAIRS": { "trigger_square": "B15" }
+  },
+  "obstacles": {
+    "dining_table": ["K6", "K7", "K8"],
+    "note": "Full mansion layout (rooms, corridors, décor) is generated programmatically in buildGrid21x15Board()"
+  }
+}

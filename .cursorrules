@@ -1,0 +1,167 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# 13 Dead End Drive — Global Project Guardrails (.cursorrules)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Scope  : Every file, every agent, every contributor, every CI pipeline.
+# Status : ACTIVE — non-negotiable. Violations block merges.
+# Updated: Phase 2.2 → 2.3 handoff
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 0 — Knowledge Base First (Pre-Mutation Requirement)
+# ─────────────────────────────────────────────────────────────────────────────
+# Before mutating ANY source file, every agent MUST:
+#   1. Read /.context/system_state.md     → understand current phase and registry
+#   2. Read /.context/api_contracts.md    → validate type changes against contracts
+#   3. Read /.context/prompt_playbook.md  → learn what has already been tried
+#   4. Read the target directory's .mdc file if one exists
+#   5. Check /.context/rfc/               → understand historical design design invariants
+#
+# You are required to treat files inside `/.context/rfc/` as immutable technical debt
+# and design invariants. Code generations must align with our recorded historical RFCs.
+#
+# Failure to read these files before editing is a protocol violation.
+# The agent must self-report any context gaps before proceeding.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 1 — Strict TDD Workflow (Test-Driven Development)
+# ─────────────────────────────────────────────────────────────────────────────
+# All implementation follows this exact order. No exceptions.
+#
+#   STEP 1 — SPEC FIRST
+#     Write the failing test spec before writing any implementation code.
+#     The spec must be committed and confirmed RED before Step 2 begins.
+#
+#   STEP 2 — MINIMAL IMPLEMENTATION
+#     Write only the code necessary to make the failing tests pass.
+#     Do not add logic not covered by an existing failing test.
+#
+#   STEP 3 — VERIFY GREEN
+#     Run `npx vitest run --reporter=verbose` and confirm 0 failures.
+#     Present the full terminal output. Never claim tests pass without evidence.
+#
+#   STEP 4 — REGRESSION CHECK
+#     All previously passing tests must still pass after every new implementation.
+#     A new green test that causes an old test to fail = BLOCKED.
+#
+#   STEP 5 — REFACTOR (optional)
+#     Clean up only after the suite is fully green. No logic changes during refactor.
+#
+# Anti-patterns that are FORBIDDEN:
+#   ❌ Writing implementation before writing the spec
+#   ❌ Skipping the terminal output verification step
+#   ❌ Merging when any test is red
+#   ❌ Mocking the system under test inside the test itself
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 2 — Zero Loose Types
+# ─────────────────────────────────────────────────────────────────────────────
+# The TypeScript configuration enforces:
+#   "strict": true
+#   "noUncheckedIndexedAccess": true
+#   "noImplicitAny": true
+#   "noImplicitReturns": true
+#   "exactOptionalPropertyTypes": true
+#
+# At the code level:
+#   ❌ FORBIDDEN: `any`            — use `unknown` and narrow with type guards
+#   ❌ FORBIDDEN: `as any`         — use a properly typed assertion or refactor
+#   ❌ FORBIDDEN: `// @ts-ignore`  — fix the actual type error
+#   ❌ FORBIDDEN: `// @ts-expect-error` without an inline justification comment
+#   ❌ FORBIDDEN: Loose object literals that widen to `{}` or `object`
+#   ✅ REQUIRED:  Discriminated unions for all multi-variant payloads (e.g. PlayCardPayload)
+#   ✅ REQUIRED:  `as const` on every tuple used as a union source
+#   ✅ REQUIRED:  Explicit return type annotations on all exported functions
+#
+# Card action payloads use STRICT discriminated unions. Each cardType variant
+# carries ONLY the fields it requires — no nullable cross-field pollution.
+# See src/types/socket-events.ts for the canonical pattern.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 3 — Language & Runtime Standards
+# ─────────────────────────────────────────────────────────────────────────────
+#   - TypeScript 5.5+, strict mode enforced by tsconfig.json
+#   - Node.js 24+, ESM modules only ("type": "module" in package.json)
+#   - All import paths MUST use .js extensions (NodeNext module resolution)
+#   - Test framework: Vitest 2.x only — no Jest, no Mocha
+#   - No CommonJS require() anywhere in the codebase
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 4 — Pure Functional Engine Pipeline
+# ─────────────────────────────────────────────────────────────────────────────
+# All engine functions are PURE:
+#   Input:  (state: GameState, ...eventArgs) → Output: GameState (new reference)
+#   The input `state` object is NEVER mutated.
+#   All state updates use structural spread cloning.
+#
+# Enforced pipeline order for every player turn:
+#   1. Guard:    Turn ownership, character eligibility, alive status, dice present
+#   2. Validate: Path structure (empty / duplicate / origin / toCell mismatch)
+#   3. Validate: Path contiguity via board adjacency graph + blocker scan
+#   4. Apply:    applyMove()      — pure position update, no side effects
+#   5. Evaluate: evaluateTraps()  — auto-trigger post-condition (Phase 2.2) ✅
+#   6. Evaluate: evaluateWin()    — win/loss resolution (Phase 2.4) 🔲
+#
+# Side effects (WS broadcast, DB write, logging) are FORBIDDEN inside engine functions.
+# The transport layer calls engine functions and handles their output.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 5 — Module Boundaries (Hard Walls)
+# ─────────────────────────────────────────────────────────────────────────────
+# Each engine module has a single, non-overlapping responsibility:
+#
+#   src/engine/moveCharacter.ts    → Path validation + pawn position update only
+#   src/engine/trapEvaluator.ts    → Trap fire cascade, portrait rotation, player elimination
+#   src/engine/detectiveTrack.ts   → Detective step advance + mass elimination
+#   src/engine/playCard.ts         → Card action dispatch + discriminated union validation
+#   src/engine/winCondition.ts     → Win/loss resolution only
+#   src/engine/turnOrchestrator.ts → Cross-module pipeline composition (Phase 2.5)
+#
+# Cross-module calls MUST be made via the orchestrator, not via direct imports
+# between peer engine modules (prevents circular dependency chains).
+# Exception: moveCharacter.ts may directly call evaluateTraps() per Phase 2.2 design.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 6 — Error Handling
+# ─────────────────────────────────────────────────────────────────────────────
+#   ✅ All engine errors MUST throw `EngineError` (src/engine/EngineError.ts)
+#   ✅ EngineError.code MUST be a valid SocketErrorCode literal from enums.ts
+#   ✅ The WS transport layer catches EngineError and maps .code → ErrorResponse
+#   ❌ Never throw raw `new Error(...)` from engine functions
+#   ❌ Never swallow errors silently — every catch must rethrow or handle explicitly
+#   ❌ Never use console.error as a substitute for structured error handling
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 7 — Testing Standards
+# ─────────────────────────────────────────────────────────────────────────────
+#   - Test files live in: src/__tests__/engine/
+#   - Fixture factories live in: src/__tests__/fixtures/gameState.fixtures.ts
+#   - NEVER inline mock objects inside spec files — always import from fixtures
+#   - Use the `expectEngineError(fn, code)` helper — never `.toThrow(string)`
+#     Reason: .toThrow(string) matches the error MESSAGE; we assert error CODES
+#   - Every spec file has a one-line comment at the top naming the function under test
+#   - Describe blocks map 1:1 to behavioral domains (not implementation internals)
+#   - Each `it()` block asserts exactly ONE behavior — no compound assertions
+#   - `beforeEach` is used for state setup — never share mutable state across tests
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 8 — Naming Conventions
+# ─────────────────────────────────────────────────────────────────────────────
+#   Engine functions  : camelCase verb+noun  (moveCharacter, evaluateTraps, advanceDetective)
+#   Types/Interfaces  : PascalCase           (GameState, TrapState, MovePawnEvent)
+#   Const tuple items : SCREAMING_SNAKE_CASE (CHANDELIER, GAME_OVER, READY)
+#   Test fixtures     : make-prefix          (makeGameState, makeCell, makeTrap)
+#   Engine errors     : SCREAMING_SNAKE_CASE (INVALID_MOVE, NOT_YOUR_TURN, GAME_ALREADY_OVER)
+#   Spec files        : <subject>.spec.ts    (moveCharacter.spec.ts, trapAutoTrigger.spec.ts)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULE 9 — Living Documentation Maintenance
+# ─────────────────────────────────────────────────────────────────────────────
+# These files MUST be kept current at every phase gate:
+#
+#   /.context/system_state.md      — Phase status, module registry, resolved constraints
+#   /.context/api_contracts.md     — All public type interfaces and their change log
+#   /.context/prompt_playbook.md   — Archive of successful prompt patterns per milestone
+#   /.context/ai_skills.md         — AI agent role definitions and expertise profiles
+#
+# An agent that modifies src/types/ without updating api_contracts.md is in violation.
+# An agent that completes a phase gate without updating system_state.md is in violation.

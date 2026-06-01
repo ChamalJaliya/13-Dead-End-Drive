@@ -1,6 +1,7 @@
-import { dirname, resolve } from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, mergeConfig } from 'vitest/config';
+import tsconfigPaths from 'vite-tsconfig-paths';
 import viteConfig from './vite.config.js';
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -8,6 +9,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    plugins: [tsconfigPaths({ root })],
     test: {
       globals: false,
       environment: 'happy-dom',
@@ -19,15 +21,6 @@ export default mergeConfig(
         exclude: ['src/__tests__/**'],
       },
       reporters: ['verbose'],
-    },
-    resolve: {
-      alias: {
-        '@data': resolve(root, 'data'),
-        '@ded/types': resolve(root, 'packages/types/src'),
-        '@ded/engine': resolve(root, 'packages/engine/src'),
-        '@ded/network': resolve(root, 'packages/network/src'),
-        '@ded/game-logic': resolve(root, 'packages/game-logic/src'),
-      },
     },
   }),
 );

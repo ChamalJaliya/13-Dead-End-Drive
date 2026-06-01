@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
+import { createDedAliases } from './config/ded-vite-aliases.js';
+
+const root = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: '.',
@@ -10,7 +14,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      input: { main: resolve(__dirname, 'index.html') },
+      input: { main: resolve(root, 'index.html') },
     },
   },
   server: {
@@ -46,12 +50,6 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@data': resolve(__dirname, 'data'),
-      '@ded/types': resolve(__dirname, 'packages/types/src'),
-      '@ded/engine': resolve(__dirname, 'packages/engine/src'),
-      '@ded/network': resolve(__dirname, 'packages/network/src'),
-      '@ded/game-logic': resolve(__dirname, 'packages/game-logic/src'),
-    },
+    alias: createDedAliases(root),
   },
 });

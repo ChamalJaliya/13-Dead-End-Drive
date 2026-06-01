@@ -12,7 +12,7 @@
     "dev": "npm run dev:client",
     "dev:client": "vite",
     "dev:server": "npm run dev -w @ded/game-server",
-    "dev:bot-ai": "cd services/bot-ai && uvicorn app.main:app --reload --port 8000",
+    "dev:bot-ai": "cd services/bot-ai && python3 -m uvicorn app.main:app --reload --port 8000",
     "dev:all": "concurrently -n client,server,bot -c blue,green,magenta \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:bot-ai\"",
     "build": "tsc --noEmit && vite build",
     "build:server": "npm run build -w @ded/game-server",

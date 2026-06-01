@@ -90,7 +90,12 @@ export function pickHeuristicAction(
         break;
       case 'CHANGE_PORTRAIT': {
         const heir = maskedState.activePortrait.portraitStack[0];
-        score = heir !== undefined && botRooting.includes(heir) ? 14 : 2;
+        score =
+          heir !== undefined &&
+          heir !== 'AUNT_AGATHA' &&
+          botRooting.includes(heir)
+            ? 14
+            : 2;
         break;
       }
       case 'MOVE_PAWN':

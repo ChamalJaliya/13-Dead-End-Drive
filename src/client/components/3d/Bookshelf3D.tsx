@@ -4,12 +4,15 @@
  * Features programmatically arranged stacks of books with randomized height, depth, color, and tilting.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
 interface Bookshelf3DProps {
   position?: [number, number, number];
   rotation?: number;
   scale?: [number, number, number];
+  animTip?: boolean;
 }
 
 interface Book {
@@ -23,11 +26,22 @@ interface Book {
   tilt: number;
 }
 
-export function Bookshelf3D({ 
-  position = [0, 0, 0], 
+export function Bookshelf3D({
+  position = [0, 0, 0],
   rotation = 0,
-  scale = [1, 1, 1]
+  scale = [1, 1, 1],
+  animTip = false,
 }: Bookshelf3DProps) {
+  const shelfRef = useRef<THREE.Group>(null);
+  const tipRef = useRef(0);
+
+  useFrame((_, delta) => {
+    const target = animTip ? 0.42 : 0;
+    tipRef.current = THREE.MathUtils.lerp(tipRef.current, target, delta * 5);
+    if (shelfRef.current) {
+      shelfRef.current.rotation.z = tipRef.current;
+    }
+  });
   // Generate a random collection of high-fidelity book meshes for the shelf
   const books = useMemo(() => {
     const list: Book[] = [];
@@ -76,7 +90,7 @@ export function Bookshelf3D({
   }, []);
 
   return (
-    <group position={position} rotation={[0, rotation, 0]} scale={scale}>
+    <group ref={shelfRef} position={position} rotation={[0, rotation, 0]} scale={scale}>
       {/* ── Outer Mahogany Cabinet Frame ── */}
       {/* Back Panel */}
       <mesh position={[-0.24, 1.7, 0]} castShadow receiveShadow>

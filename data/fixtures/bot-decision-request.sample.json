@@ -1,0 +1,55 @@
+{
+  "gameId": "00000000-0000-4000-8000-000000000001",
+  "botPlayerId": "player-bot-01",
+  "difficulty": "NORMAL",
+  "strategy": "HEURISTIC",
+  "maskedState": {
+    "gameId": "00000000-0000-4000-8000-000000000001",
+    "boardVersion": "GRID_21X15",
+    "phase": "PLAYING",
+    "turnNumber": 1,
+    "activePlayerId": "player-bot-01",
+    "turnOrder": ["player-human-1", "player-bot-01"],
+    "players": {},
+    "characters": {},
+    "board": {},
+    "traps": {},
+    "detectivePosition": { "currentStep": 0, "maxSteps": 10, "trackCells": [], "isAtExit": false },
+    "activePortrait": {
+      "currentHeirId": "AUNT_AGATHA",
+      "portraitStack": ["CHARITY"],
+      "portraitHistory": [],
+      "lastChangedOnTurn": 1,
+      "lastChangedReason": "OPENING_AGATHA"
+    },
+    "lastDiceRoll": null,
+    "pipsRemaining": null,
+    "movementPlan": null,
+    "firstMoveCharacterId": null,
+    "movesUsedThisTurn": 0,
+    "pendingTrapCell": null,
+    "pendingTrapHandCardIds": null,
+    "pendingTrapDrawnCardId": null,
+    "deck": [],
+    "discardPile": [],
+    "winner": null,
+    "winCondition": null,
+    "exposedRooting": {},
+    "secretCardsRevealed": false,
+    "createdAt": "2026-06-01T00:00:00.000Z",
+    "updatedAt": "2026-06-01T00:00:00.000Z",
+    "subPhase": "AWAITING_ROLL"
+  },
+  "legalActions": [
+    {
+      "optionId": "roll",
+      "kind": "ROLL_DICE",
+      "summary": "Roll dice",
+      "event": {
+        "type": "ROLL_DICE",
+        "gameId": "00000000-0000-4000-8000-000000000001",
+        "playerId": "player-bot-01"
+      }
+    }
+  ]
+}

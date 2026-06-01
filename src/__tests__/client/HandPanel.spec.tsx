@@ -29,7 +29,7 @@ describe('HandPanel', () => {
 
     useGameStore.setState({
       localPlayerId: PLAYER_A_ID,
-      playMode: 'multiplayer',
+      playMode: 'local',
       playTrapCard: () => {},
     });
   });

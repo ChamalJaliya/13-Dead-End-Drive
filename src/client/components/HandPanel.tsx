@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore.js';
+import { useUiStore } from '../store/useUiStore.js';
 import { resolveActingPlayerId } from '../soloActingPlayer.js';
 import type { PlayerId } from '../../types/enums.js';
 import type { GameState } from '../../types/game-state.js';
@@ -23,6 +24,13 @@ function handCardClass(card: ActionCard, playable: boolean): string {
 
 export function HandPanel({ gameState, rightInsetPx = 24 }: HandPanelProps) {
   const { playTrapCard, localPlayerId, playMode } = useGameStore();
+  const isBotThinking = useUiStore((s) => s.isBotThinking);
+  const isHumanTurn = useGameStore(
+    (s) =>
+      !!s.gameState &&
+      !isBotThinking &&
+      s.gameState.activePlayerId === s.localPlayerId,
+  );
   const [isExpanded, setIsExpanded] = useState(true);
 
   const actingPlayerId = resolveActingPlayerId(
@@ -37,7 +45,10 @@ export function HandPanel({ gameState, rightInsetPx = 24 }: HandPanelProps) {
   const drawnId = gameState.pendingTrapDrawnCardId;
 
   const isPlayable = (card: ActionCard): boolean =>
-    isTrapPhase && (pendingIds.includes(card.cardId) || card.cardId === drawnId);
+    isHumanTurn &&
+    !isBotThinking &&
+    isTrapPhase &&
+    (pendingIds.includes(card.cardId) || card.cardId === drawnId);
 
   const preview = localHand.slice(0, 2).map((c) => c.label).join(' · ');
 

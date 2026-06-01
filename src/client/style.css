@@ -1529,6 +1529,28 @@
     color: hsla(45, 85%, 70%, 0.72);
   }
 
+  .lobby-opponent-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+  }
+
+  .lobby-btn--opponent {
+    flex: 1;
+    min-height: 2.5rem;
+    padding: 0.5rem;
+    border: 1px solid hsla(220, 12%, 40%, 0.6);
+    background: hsl(220, 16%, 11%);
+    color: hsl(220, 10%, 75%);
+    font-size: 0.875rem;
+  }
+
+  .lobby-btn--opponent-active {
+    border-color: hsla(45, 90%, 55%, 0.65);
+    background: hsla(45, 55%, 12%, 0.65);
+    color: hsl(45, 95%, 68%);
+  }
+
   .lobby-btn--host {
     margin-top: 0.25rem;
     border: 1px solid hsla(205, 90%, 55%, 0.5);

@@ -497,6 +497,19 @@ export class GameBoardView {
   private viewportAttached = false;
 
   public viewShake = 0;
+  public eliminationFlash = 0;
+
+  public triggerEliminationFlash(): void {
+    this.viewShake = Math.max(this.viewShake, 14);
+    this.eliminationFlash = 1;
+    this.scheduleRedraw();
+    window.setTimeout(() => {
+      this.eliminationFlash = Math.max(0, this.eliminationFlash - 0.15);
+      if (this.eliminationFlash > 0) {
+        this.scheduleRedraw();
+      }
+    }, 300);
+  }
   public activeAnimation: (AnimationState & {
     startPos: { x: number; y: number };
     targetPos: { x: number; y: number };
@@ -817,6 +830,18 @@ export class GameBoardView {
           this.ctx.fill();
           this.ctx.stroke();
           this.ctx.shadowBlur = 0;
+        }
+
+        if (this.eliminationFlash > 0 && this.ctx.canvas) {
+          this.ctx.save();
+          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          this.ctx.fillStyle = `rgba(180, 20, 30, ${this.eliminationFlash * 0.22})`;
+          this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+          this.ctx.restore();
+          this.eliminationFlash = Math.max(0, this.eliminationFlash - 0.12);
+          if (this.eliminationFlash > 0) {
+            requestFrame(() => this.scheduleRedraw());
+          }
         }
 
         if (useViewport) {

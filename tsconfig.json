@@ -6,7 +6,6 @@
     "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitAny": true,
@@ -22,10 +21,19 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "~/*": ["./src/*"]
+      "~/*": ["./src/*"],
+      "@ded/types/*": ["./packages/types/src/*"],
+      "@ded/engine/*": ["./packages/engine/src/*"],
+      "@ded/network/*": ["./packages/network/src/*"],
+      "@ded/game-logic/*": ["./packages/game-logic/src/*"]
     }
   },
-  "include": ["src/**/*", "src/**/*.tsx", "data/**/*.json"],
+  "include": [
+    "src/**/*",
+    "src/**/*.tsx",
+    "packages/**/src/**/*",
+    "data/**/*.json"
+  ],
   "exclude": [
     "node_modules",
     "dist",

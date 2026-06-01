@@ -16,6 +16,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '~': '/Users/chamal/Desktop/13 Dead End Drive/src',
+      '@ded/types': '/Users/chamal/Desktop/13 Dead End Drive/packages/types/src',
+      '@ded/engine': '/Users/chamal/Desktop/13 Dead End Drive/packages/engine/src',
+      '@ded/network': '/Users/chamal/Desktop/13 Dead End Drive/packages/network/src',
+      '@ded/game-logic': '/Users/chamal/Desktop/13 Dead End Drive/packages/game-logic/src',
     },
   },
 });

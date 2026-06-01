@@ -3,8 +3,11 @@
  */
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { gameAudio } from '../audio/gameAudioInstance.js';
 import { useGameStore } from '../store/useGameStore.js';
+import { useUiStore } from '../store/useUiStore.js';
 import { resolveActingPlayerId } from '../soloActingPlayer.js';
+import { isBotPlayerId } from '../bots/botRegistry.js';
 import type { PlayerId } from '../../types/enums.js';
 import type { GameState } from '../../types/game-state.js';
 import { CHARACTER_DATA } from '../../engine/gameInitializer.js';
@@ -25,18 +28,13 @@ const LOG_VARIANT_CLASS = {
 } as const;
 
 export function EstateConsole({ gameState, onCollapsedChange }: EstateConsoleProps) {
-  const {
-    toggle3D,
-    is3DMode,
-    resetGame,
-    drawTrapCard,
-    declineTrap,
-    eventLog,
-    localPlayerId,
-    playMode,
-  } = useGameStore();
+  const { resetGame, drawTrapCard, declineTrap, localPlayerId, playMode } = useGameStore();
+  const { toggle3D, is3DMode, eventLog, isBotThinking } = useUiStore();
 
   const [collapsed, setCollapsed] = useState(false);
+  const [audioMuted, setAudioMuted] = useState(() =>
+    typeof localStorage !== 'undefined' && localStorage.getItem('ded-audio-muted') === '1',
+  );
   const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,8 +47,11 @@ export function EstateConsole({ gameState, onCollapsedChange }: EstateConsolePro
 
   const activePlayer = gameState.players[gameState.activePlayerId];
   const activePlayerName = activePlayer?.displayName ?? 'Unknown';
-  const isPlayerA = gameState.activePlayerId === 'player-aaaa-0001';
-  const playerAccent = isPlayerA ? 'estate-console__player--a' : 'estate-console__player--b';
+  const activeTurnIndex = gameState.turnOrder.indexOf(gameState.activePlayerId);
+  const playerAccent =
+    activeTurnIndex % 2 === 0
+      ? 'estate-console__player--a'
+      : 'estate-console__player--b';
 
   const actingPlayerId = resolveActingPlayerId(
     gameState,
@@ -148,8 +149,11 @@ export function EstateConsole({ gameState, onCollapsedChange }: EstateConsolePro
         <div className="estate-console__turn-player">
           <span className="estate-console__turn-label">Active</span>
           <span className={`estate-console__player-name ${playerAccent}`}>{activePlayerName}</span>
-          {playMode === 'solo' && (
-            <span className="estate-console__solo-hint">Solo — you play both seats</span>
+          {isBotThinking && (
+            <span className="estate-console__solo-hint">Bot thinking…</span>
+          )}
+          {playMode === 'solo' && isBotPlayerId(gameState.activePlayerId) && !isBotThinking && (
+            <span className="estate-console__solo-hint">AI turn</span>
           )}
         </div>
         <div className="estate-console__turn-meta">
@@ -166,7 +170,7 @@ export function EstateConsole({ gameState, onCollapsedChange }: EstateConsolePro
         <section className="estate-console__section" aria-label="Your rooting">
           <div className="estate-console__section-head">
             <h3 className="estate-console__section-title">
-              {playMode === 'solo' ? `${activePlayerName}'s rooting` : 'Your rooting'}
+              Your rooting
             </h3>
             <span className="estate-console__section-count">{localRooting.length}</span>
           </div>
@@ -253,6 +257,18 @@ export function EstateConsole({ gameState, onCollapsedChange }: EstateConsolePro
 
       {/* Footer actions */}
       <footer className="estate-console__footer">
+        <button
+          type="button"
+          className="estate-console__action"
+          onClick={() => {
+            gameAudio.ensureContext();
+            const muted = gameAudio.toggleMute();
+            setAudioMuted(muted);
+          }}
+          title={audioMuted ? 'Unmute sound' : 'Mute sound'}
+        >
+          {audioMuted ? 'Unmute' : 'Mute'}
+        </button>
         <button type="button" className="estate-console__action" onClick={toggle3D} title="Toggle 2D/3D view">
           {is3DMode ? '2D map' : '3D board'}
         </button>

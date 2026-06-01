@@ -1,0 +1,191 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# engine-rules.mdc — Directory-Scoped Rules for src/engine/
+# ═══════════════════════════════════════════════════════════════════════════════
+# Scope  : Every file inside src/engine/ and any file that imports from it.
+# Read   : MANDATORY before any edit to this directory.
+# Updated: Phase 2.2 complete → Phase 2.3 active
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## 0. Pre-Edit Checklist
+Before modifying any file in this directory:
+  [ ] Read /.context/system_state.md → confirm active phase and module registry
+  [ ] Read /.context/api_contracts.md → confirm no type contract is being violated
+  [ ] Read this file in full
+  [ ] Identify the single engine module your change belongs to (see Module Map below)
+  [ ] Confirm your change does NOT cross module boundaries (see Rule 3)
+
+---
+
+## 1. Absolute Scope Constraint
+This directory contains ONLY server-side, stateless, pure game-logic functions.
+
+FORBIDDEN in this directory:
+  ❌ I/O operations of any kind (fs, fetch, axios)
+  ❌ WebSocket emit/send calls
+  ❌ Database queries (Prisma, Mongoose, raw SQL)
+  ❌ Console logging or side-effect instrumentation
+  ❌ setTimeout, setInterval, or any async/await
+  ❌ Importing from src/transport/, src/db/, or src/api/
+
+Every function must be synchronous and deterministic:
+  Given the same (GameState, event) inputs → always produces the same output GameState.
+
+---
+
+## 2. Function Signature Contract
+Every exported engine function MUST conform to one of these signatures:
+
+  // Primary action handler
+  export function verbNoun(state: GameState, event: SomeEvent): GameState
+
+  // Internal sub-step (not exported from the engine directory)
+  function verbNoun(state: GameState, ...specificArgs): GameState
+
+Rules:
+  - Input GameState is NEVER mutated. Use spread cloning at every update level.
+  - Return type MUST be explicitly annotated as `GameState`.
+  - No optional parameters — all inputs are required or encoded in GameState.
+
+Immutability pattern (REQUIRED — never deviate):
+  ✅  return { ...state, characters: { ...state.characters, [id]: { ...char, status: 'ELIMINATED' } } }
+  ❌  state.characters[id].status = 'ELIMINATED'   // direct mutation — FORBIDDEN
+  ❌  Object.assign(state.characters, { [id]: ... }) // Object.assign mutation — FORBIDDEN
+
+---
+
+## 3. Module Map & Hard Boundaries
+Each module owns exactly one responsibility slice. Do not bleed logic between modules.
+
+  ┌─────────────────────────────────┬──────────────────────────────────────────────────┐
+  │ Module                          │ Owns                                             │
+  ├─────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ moveCharacter.ts                │ Path validation, pip enforcement, applyMove()    │
+  │ trapEvaluator.ts                │ Trap fire cascade, portrait rotation, elimination│
+  │ detectiveTrack.ts               │ Detective advancement, mass elimination, GAME_OVER│
+  │ playCard.ts                     │ Card discriminated-union dispatch, card effects  │
+  │ winCondition.ts                 │ Win/loss detection, HEIR_ESCAPED, LAST_ALIVE     │
+  │ turnOrchestrator.ts (Phase 2.5) │ Composes all modules into a single turn pipeline │
+  │ EngineError.ts                  │ EngineError class — shared utility, not a module │
+  └─────────────────────────────────┴──────────────────────────────────────────────────┘
+
+Cross-module import policy:
+  - moveCharacter.ts MAY import evaluateTraps (approved Phase 2.2 exception)
+  - No other peer-to-peer imports between engine modules
+  - All multi-step orchestration belongs in turnOrchestrator.ts
+
+---
+
+## 4. Trap Auto-Trigger Rules (trapEvaluator.ts)
+
+### Trigger Condition
+A trap fires when ALL of the following are true:
+  1. The character's landing cell has a non-null `trapRef`
+  2. The referenced trap's `state` is `'READY'`
+
+Trigger is POSITION-ONLY. No client card match is required.
+(The original board game required a card match; our digital spec removed this
+constraint in Phase 1.4. The TDD tests are the authoritative specification.)
+
+### Cascade Order (strictly sequential, fully immutable)
+  Step 1 → spendTrap()
+             Set trap.state = 'SPENT'
+             Return new GameState with updated traps map
+
+  Step 2 → eliminateCharactersOnTrap()
+             Scan all ALIVE characters whose position ∈ trap.eliminatesOnCells
+             Set their status = 'ELIMINATED', eliminationCause = 'TRAP'
+             Remove them from board cell occupant lists
+             If eliminatesOnCells is empty → skip elimination (non-lethal trap)
+
+  Step 3 → rotatePortrait() [only if heir was eliminated]
+             Check if state.activePortrait.currentHeirId ∈ eliminatedIds
+             If yes: select next ALIVE character (scan CHARACTER_IDS in order)
+             Update portrait.currentHeirId, add old heir to portraitHistory
+             Set lastChangedReason = 'HEIR_ELIMINATED'
+             Stamp new heir's isPortraitHeir = true
+
+  Step 4 → computePlayerElimination()
+             For each player: if all characterIds are ELIMINATED → isEliminated = true
+
+### Non-Lethal Traps
+  BEAR_RUG (eliminatesOnCells: []) → transitions to SPENT, NO character elimination
+  Any trap with an empty eliminatesOnCells list follows the same rule.
+
+---
+
+## 5. Detective Track Rules (detectiveTrack.ts)
+
+### Advance Trigger
+  advanceDetective() is called when the event die resolves to 'DETECTIVE'.
+  It is NOT called from inside moveCharacter.ts — it is a separate pipeline step.
+
+### Advance Logic
+  newStep = currentStep + 1
+  isAtExit = newStep >= maxSteps
+
+### At-Exit Cascade (mass elimination)
+  When isAtExit === true:
+    1. Set all ALIVE characters → status = 'ELIMINATED', eliminationCause = 'DETECTIVE'
+    2. Set all players → isEliminated = true
+    3. Resolve winner: first non-eliminated player in turnOrder, or activePlayerId as fallback
+    4. Set phase = 'GAME_OVER', winCondition = 'LAST_ALIVE'
+
+### Guard
+  Throws EngineError('GAME_ALREADY_OVER') if state.phase === 'GAME_OVER'
+
+---
+
+## 6. Card Play Rules (playCard.ts — Phase 2.3)
+
+### Discriminated Union Dispatch
+PlayCardPayload is a strict discriminated union. Each variant carries ONLY its required fields:
+
+  'ROTATE_PORTRAIT'    → requires targetCharacterId (CharacterId)
+  'REARM_TRAP'         → requires targetTrapId (TrapId)
+  'BLOCK_DETECTIVE'    → no target fields
+  'BONUS_MOVE'         → requires targetCharacterId + targetCellId
+  'TRIGGER_TRAP_REMOTE'→ requires targetTrapId (TrapId)
+
+The playCard() function MUST use a switch/exhaustive-check on payload.cardType.
+Missing required fields → throw EngineError('MALFORMED_PAYLOAD').
+
+### Business Rule Guards (in order)
+  1. Card not in player.hand → throw EngineError('CARD_NOT_IN_HAND')
+  2. Target character not controlled by player → throw EngineError('CHARACTER_NOT_YOURS')
+  3. Target character is ELIMINATED (for ROTATE_PORTRAIT) → throw EngineError('INVALID_MOVE')
+  4. Target trap already READY (for REARM_TRAP) → throw EngineError('INVALID_MOVE')
+  5. Target trap is SPENT (for TRIGGER_TRAP_REMOTE) → throw EngineError('TRAP_ALREADY_SPENT')
+  6. Duplicate eventId already processed → throw EngineError('IDEMPOTENCY_CONFLICT')
+
+### Post-Play Cleanup
+  Remove the played card from player.hand after successful execution.
+
+---
+
+## 7. Win Condition Rules (winCondition.ts — Phase 2.4)
+
+### HEIR_ESCAPED
+  Triggered when: character at EXIT_DOOR cell AND character.isPortraitHeir === true
+  winner = playerId who controls that character
+  winCondition = 'HEIR_ESCAPED'
+
+### LAST_ALIVE
+  Triggered when: only one player has at least one ALIVE character
+  winner = that player
+  winCondition = 'LAST_ALIVE'
+
+### NON_HEIR_EXIT_ATTEMPT
+  Character at EXIT_DOOR AND character.isPortraitHeir === false:
+    → Do NOT eliminate the character
+    → Reset position to 'FOYER'
+    → Emit PAWN_RESET response (handled by transport layer)
+
+---
+
+## 8. Testing Requirements for This Directory
+  - Each engine module MUST have a corresponding spec file in src/__tests__/engine/
+  - Spec naming: <moduleName>.spec.ts (e.g. playCard.spec.ts, winCondition.spec.ts)
+  - All fixtures via src/__tests__/fixtures/gameState.fixtures.ts — no inline mocks
+  - Minimum 10 test cases per engine module
+  - Every EngineError.code must appear in at least one test as a negative case
+  - Run `npx vitest run --reporter=verbose` and confirm full green before closing a phase

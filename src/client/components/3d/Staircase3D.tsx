@@ -4,19 +4,35 @@
  * Renders an 8-tread mahogany staircase flanked by polished gold handrails.
  */
 
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+
 interface Staircase3DProps {
   position?: [number, number, number];
   rotation?: number;
   width?: number;
   depth?: number;
+  animCollapse?: boolean;
 }
 
-export function Staircase3D({ 
-  position = [0, 0, 0], 
+export function Staircase3D({
+  position = [0, 0, 0],
   rotation = 0,
   width,
-  depth
+  depth,
+  animCollapse = false,
 }: Staircase3DProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const sinkRef = useRef(0);
+
+  useFrame((_, delta) => {
+    const target = animCollapse ? -0.35 : 0;
+    sinkRef.current = THREE.MathUtils.lerp(sinkRef.current, target, delta * 4);
+    if (groupRef.current) {
+      groupRef.current.position.y = sinkRef.current;
+    }
+  });
   const stepCount = 8;
   const stepWidth = width ?? 5.25;  // spans 3 grid cells (5.4m)
   const totalDepth = depth ?? 3.4;  // spans 2 grid cells (3.6m)
@@ -26,7 +42,7 @@ export function Staircase3D({
   const stepHeight = totalHeight / stepCount;
 
   return (
-    <group position={position} rotation={[0, rotation, 0]}>
+    <group ref={groupRef} position={position} rotation={[0, rotation, 0]}>
       {/* ── Side Mahogany Stringers (Support panels) ── */}
       {/* Left Stringer */}
       <mesh position={[-stepWidth / 2 - 0.05, totalHeight / 2, 0]} castShadow receiveShadow>

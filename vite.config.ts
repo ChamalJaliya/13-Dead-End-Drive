@@ -16,6 +16,18 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    proxy: {
+      '/bot-api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/bot-api/, ''),
+      },
+      '/lobby-api': {
+        target: 'http://localhost:2567',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/lobby-api/, ''),
+      },
+    },
   },
   preview: {
     port: 4173,
@@ -24,6 +36,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@data': resolve(__dirname, 'data'),
+      '@ded/types': resolve(__dirname, 'packages/types/src'),
+      '@ded/engine': resolve(__dirname, 'packages/engine/src'),
+      '@ded/network': resolve(__dirname, 'packages/network/src'),
+      '@ded/game-logic': resolve(__dirname, 'packages/game-logic/src'),
     },
   },
 });

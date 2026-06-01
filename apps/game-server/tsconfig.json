@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "../..",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@ded/types/*": ["../../packages/types/src/*"],
+      "@ded/engine/*": ["../../packages/engine/src/*"],
+      "@ded/network/*": ["../../packages/network/src/*"],
+      "@ded/game-logic/*": ["../../packages/game-logic/src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/types/src/**/*",
+    "../../packages/engine/src/**/*",
+    "../../packages/network/src/**/*",
+    "../../packages/game-logic/src/**/*",
+    "../../src/server/**/*"
+  ],
+  "exclude": ["node_modules", "dist", "../../src/client/**"]
+}

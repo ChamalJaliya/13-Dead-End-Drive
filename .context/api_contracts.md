@@ -21,6 +21,140 @@ Living source of truth for public TypeScript interfaces, socket events, and enum
 | 2026-05-27 | Rules | `GRID_21X15_CHAIR_LAYOUT_REVISION`, dining chair set | `boardDefinition.ts` |
 | 2026-05-27 | Network | Owner always receives own `secretCharacterIds` in `filterStateForPlayer` | `broadcastPipeline.ts` |
 | 2026-05-27 | Turn | `movementPlan`, `firstMoveCharacterId`, `CHOOSE_MOVEMENT_PLAN` | `game-state.ts`, `socket-events.ts` |
+| 2026-06-01 | Bots | `BotDecisionRequest` / `BotDecisionResponse`, `bot-api.ts` | `src/types/bot-api.ts`, `services/bot-ai/` |
+| 2026-06-01 | FX | `ClientFxEvent` union + `detectClientFxEvents` diff pipeline | `src/client/fx/clientFxTypes.ts`, `detectClientFxEvents.ts` |
+| 2026-06-01 | FX | `planFxBatchPlayback` + `executeFxBatchPlan` (testable playback planning) | `src/client/fx/planFxBatchPlayback.ts`, `executeFxBatchPlan.ts` |
+| 2026-06-01 | Transport | Colyseus + Nest online play, lobby REST, env vars | RFC 005, `apps/game-server/` |
+| 2026-06-01 | Arch | Workspace packages `@ded/*`, `GameSession`, `dispatchGameEvent`, `useUiStore` | RFC 006, `packages/` |
+
+---
+
+## 9. Clean architecture packages & client dispatch (RFC 006)
+
+### Workspace packages
+
+| Package | Path | Imports allowed |
+|---------|------|-----------------|
+| `@ded/types` | `packages/types/src` | — |
+| `@ded/engine` | `packages/engine/src` | `@ded/types` |
+| `@ded/network` | `packages/network/src` | `@ded/engine`, `@ded/types` |
+| `@ded/game-logic` | `packages/game-logic/src` | `@ded/engine`, `@ded/network`, `@ded/types` |
+
+`src/types/*`, `src/engine/*`, etc. re-export from `@ded/*` for backward compatibility.
+
+### `GameSession` port
+
+| Method | Purpose |
+|--------|---------|
+| `submitAction(event)` | Apply (solo/local) or send (online) |
+| `getState()` | Current authoritative view |
+| `onState(cb)` | Subscribe to updates |
+| `dispose()` | Tear down |
+
+Implementations: `SoloSession`, `LocalSession`, `OnlineSession` in `src/client/session/`.
+
+### `dispatchGameEvent(ctx, event)`
+
+Single client ingress; calls `session.submitAction`. Online returns `null` (state via `STATE_SYNC` only).
+
+### Bot HTTP routing (locked)
+
+| Mode | Path |
+|------|------|
+| Solo | `VITE_BOT_SERVICE_URL` → Vite `/bot-api` → `bot-ai:8000` |
+| Online | `BOT_AI_URL` on game-server (`BotTurnCoordinator`) |
+
+---
+
+## 8. Colyseus + Nest online transport (RFC 005)
+
+### Environment variables
+
+| Variable | Where | Default | Purpose |
+|----------|-------|---------|---------|
+| `COLYSEUS_URL` | Client | `ws://localhost:2567` | Colyseus WebSocket endpoint |
+| `VITE_COLYSEUS_URL` | Client | same | Vite-exposed WS URL |
+| `VITE_ONLINE_MULTIPLAYER` | Client | `false` | Feature flag for lobby “Play online” |
+| `PORT` | game-server | `2567` | HTTP + Colyseus port |
+| `SUPABASE_URL` | game-server | — | Postgres API |
+| `SUPABASE_SERVICE_ROLE_KEY` | game-server | — | Server writes (never in client) |
+| `BOT_AI_URL` | game-server | `http://localhost:8000` | Online bot decisions |
+| `VITE_BOT_SERVICE_URL` | Client | `/bot-api` | Solo bot proxy path |
+| `CORS_ORIGINS` | game-server | `http://localhost:5173` | Comma-separated allowlist |
+| `AUTH_REQUIRED` | game-server | `false` | When `true`, lobby requires Bearer JWT (v2) |
+| `NODE_ENV` | game-server | — | `production` enforces Supabase env |
+
+### Lobby REST (Nest)
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| `POST` | `/lobby/create` | `{ displayName: string }` | `{ roomId, roomCode, playerId, gameState }` |
+| `POST` | `/lobby/join` | `{ roomCode, displayName }` | `{ roomId, roomCode, playerId, gameState }` |
+| `POST` | `/lobby/start` | `{ roomId, playerId, playerIds, displayNames }` | `{ gameState }` |
+| `GET` | `/health` | — | `{ status: 'ok' }` |
+
+### Colyseus room: `dead_end_drive`
+
+**Join options (`client join`):**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `roomCode` | `string` | join existing |
+| `playerId` | `PlayerId` | yes |
+| `displayName` | `string` | yes |
+
+**Client → server messages (`room.send`):**
+
+| Message | Payload | Notes |
+|---------|---------|-------|
+| `playerAction` | `SocketEvent` | Authoritative turn intent |
+
+**Server → client messages (`client.send`):**
+
+| Message | Payload | Notes |
+|---------|---------|-------|
+| `STATE_SYNC` | `{ type: 'STATE_SYNC', payload: { gameState, privateHand? } }` | Masked per player |
+| `ERROR` | `ErrorResponse` | `EngineError.code` mapped |
+
+Matchmaking: `client.joinOrCreate('dead_end_drive', { roomCode, playerId, displayName })`.
+
+### `playMode` (client store)
+
+`'solo' | 'local' | 'online'` — only `online` forbids local `processTurn`.
+
+---
+
+## 7. Solo vs bots API (`POST /v1/decide`)
+
+Client sends **masked** `GameState` (via `filterStateForPlayer`) plus precomputed `legalActions`. Python returns an index into `legalActions` only — never invents moves.
+
+### `BotDifficulty`
+
+`'EASY' | 'NORMAL' | 'HARD'`
+
+### `BotStrategy`
+
+`'HEURISTIC' | 'LLM'` (LLM requires `LLM_ENABLED` on service)
+
+### `BotDecisionRequest`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `gameId` | `GameId` | |
+| `botPlayerId` | `PlayerId` | Active bot seat |
+| `difficulty` | `BotDifficulty` | Heuristic weights |
+| `strategy` | `BotStrategy` | |
+| `maskedState` | `GameState` | Player-filtered |
+| `legalActions` | `BotActionOption[]` | Engine-valid choices |
+
+### `BotDecisionResponse`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `actionIndex` | `number` | `0 <= index < legalActions.length` |
+| `confidence` | `number` | 0–1 |
+| `rationale` | `string` | Debug / UI |
+| `strategyUsed` | `BotStrategy` | Actual strategy after fallback |
 
 ---
 

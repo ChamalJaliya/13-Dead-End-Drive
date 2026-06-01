@@ -1,0 +1,30 @@
+{
+  "name": "@ded/game-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/apps/game-server/src/main.js",
+    "dev": "tsx watch src/main.ts"
+  },
+  "dependencies": {
+    "@ded/engine": "*",
+    "@ded/game-logic": "*",
+    "@ded/network": "*",
+    "@ded/types": "*",
+    "@colyseus/core": "^0.15.0",
+    "@colyseus/ws-transport": "^0.15.0",
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/core": "^10.4.0",
+    "@nestjs/platform-express": "^10.4.0",
+    "@supabase/supabase-js": "^2.106.1",
+    "express": "^4.21.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

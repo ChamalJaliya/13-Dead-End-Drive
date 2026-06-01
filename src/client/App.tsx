@@ -4,16 +4,18 @@
  */
 
 import { useGameStore } from './store/useGameStore.js';
+import { useUiStore } from './store/useUiStore.js';
 import { Scene3D } from './components/Scene3D.js';
 import { Scene2D } from './components/Scene2D.js';
 import { HUD3D } from './components/HUD3D.js';
 import { LobbyScreen } from './components/LobbyScreen.js';
 import { GameOverScreen } from './components/GameOverScreen.js';
+import { GameFxController } from './fx/GameFxController.js';
 
 export function App() {
-  const activeOverlay = useGameStore((s) => s.activeOverlay);
+  const activeOverlay = useUiStore((s) => s.activeOverlay);
   const gameState     = useGameStore((s) => s.gameState);
-  const is3DMode      = useGameStore((s) => s.is3DMode);
+  const is3DMode      = useUiStore((s) => s.is3DMode);
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-[hsl(220,20%,5%)] bg-gothic-radial">
@@ -35,6 +37,9 @@ export function App() {
 
       {/* ── Lobby screen ── */}
       {activeOverlay === 'lobby' && <LobbyScreen />}
+
+      {/* ── Global FX (audio, trap overlay, confetti) ── */}
+      <GameFxController />
 
       {/* ── Game Over screen ── */}
       {activeOverlay === 'game-over' && gameState && (

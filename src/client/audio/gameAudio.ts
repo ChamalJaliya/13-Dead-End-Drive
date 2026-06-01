@@ -3,13 +3,25 @@
  * Procedural Web Audio FX — no external assets required.
  */
 
-import type { TrapId } from '../../types/enums.js';
+import type { TrapId, EliminationCause } from '../../types/enums.js';
 import { getTrapCinematic } from '../cinematics/trapCinematics.js';
+
+const MUTE_STORAGE_KEY = 'ded-audio-muted';
 
 export class GameAudio {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private muted = false;
+
+  public loadMutePreference(): void {
+    if (typeof localStorage === 'undefined') return;
+    this.setMuted(localStorage.getItem(MUTE_STORAGE_KEY) === '1');
+  }
+
+  private persistMute(): void {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(MUTE_STORAGE_KEY, this.muted ? '1' : '0');
+  }
 
   public ensureContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -30,10 +42,15 @@ export class GameAudio {
     if (this.masterGain) {
       this.masterGain.gain.value = muted ? 0 : 0.35;
     }
+    this.persistMute();
   }
 
   public toggleMute(): boolean {
     this.setMuted(!this.muted);
+    return this.muted;
+  }
+
+  public isMuted(): boolean {
     return this.muted;
   }
 
@@ -78,8 +95,27 @@ export class GameAudio {
   }
 
   public playDiceRoll(): void {
-    this.playTone(180, 0.08, 'square', 0.12);
-    setTimeout(() => this.playTone(240, 0.08, 'square', 0.12), 90);
+    this.playNoise(0.06, 0.22);
+    this.playTone(210, 0.05, 'square', 0.14);
+    setTimeout(() => {
+      this.playNoise(0.06, 0.18);
+      this.playTone(170, 0.05, 'square', 0.12);
+    }, 70);
+    setTimeout(() => {
+      this.playNoise(0.12, 0.3);
+      this.playTone(90, 0.18, 'sawtooth', 0.2);
+      this.playTone(55, 0.25, 'square', 0.18);
+    }, 220);
+  }
+
+  public playElimination(cause: EliminationCause): void {
+    if (cause === 'DETECTIVE') {
+      this.playTone(65, 0.35, 'sawtooth', 0.22);
+      this.playNoise(0.25, 0.2);
+    } else {
+      this.playTone(48, 0.28, 'square', 0.24);
+      setTimeout(() => this.playNoise(0.18, 0.16), 80);
+    }
   }
 
   public playMove(): void {

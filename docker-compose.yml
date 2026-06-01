@@ -1,0 +1,23 @@
+services:
+  bot-ai:
+    build: ./services/bot-ai
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_ENABLED=false
+      - BOT_DIFFICULTY_DEFAULT=NORMAL
+
+  game-server:
+    build:
+      context: .
+      dockerfile: apps/game-server/Dockerfile
+    ports:
+      - "2567:2567"
+    environment:
+      - PORT=2567
+      - BOT_AI_URL=http://bot-ai:8000
+      - CORS_ORIGINS=http://localhost:5173
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+    depends_on:
+      - bot-ai

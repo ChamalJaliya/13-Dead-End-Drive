@@ -1,4 +1,6 @@
-import React from 'react';
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
 /**
  * Statue3D.tsx
@@ -8,9 +10,25 @@ import React from 'react';
 interface Statue3DProps {
   readonly position?: [number, number, number];
   readonly rotation?: number;
+  readonly animStrike?: boolean;
 }
 
-export function Statue3D({ position = [0, 0, 0], rotation = 0 }: Statue3DProps) {
+export function Statue3D({
+  position = [0, 0, 0],
+  rotation = 0,
+  animStrike = false,
+}: Statue3DProps) {
+  const bodyRef = useRef<THREE.Group>(null);
+  const strikeRef = useRef(0);
+
+  useFrame((_, delta) => {
+    const target = animStrike ? 0.55 : 0;
+    strikeRef.current = THREE.MathUtils.lerp(strikeRef.current, target, delta * 6);
+    if (bodyRef.current) {
+      bodyRef.current.rotation.x = strikeRef.current;
+    }
+  });
+
   return (
     <group position={position} rotation={[0, rotation, 0]}>
       {/* 1. Heavy Dark Obsidian Pedestal Base */}
@@ -25,7 +43,7 @@ export function Statue3D({ position = [0, 0, 0], rotation = 0 }: Statue3DProps) 
         <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.15} />
       </mesh>
 
-      <group position={[0, 0.27, 0]}>
+      <group ref={bodyRef} position={[0, 0.27, 0]}>
         {/* 2. Ornate Iron Greaves (Legs) */}
         <mesh position={[-0.25, 0.35, 0]} castShadow>
           <cylinderGeometry args={[0.09, 0.12, 0.7, 16]} />

@@ -9,6 +9,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { HUD3D } from '../../client/components/HUD3D.js';
 import { useGameStore } from '../../client/store/useGameStore.js';
+import { useUiStore } from '../../client/store/useUiStore.js';
 import { makeGameState, makePlayer, PLAYER_A_ID, PLAYER_B_ID } from '../fixtures/gameState.fixtures.js';
 
 describe('HUD3D console collapse', () => {
@@ -21,15 +22,13 @@ describe('HUD3D console collapse', () => {
     root = createRoot(container);
 
     // Keep HUD actions stable in tests.
+    useUiStore.setState({ eventLog: [], is3DMode: true });
     useGameStore.setState({
-      toggle3D: () => {},
       resetGame: () => {},
       drawTrapCard: () => {},
       declineTrap: () => {},
       playTrapCard: () => {},
-      eventLog: [],
       localPlayerId: PLAYER_A_ID,
-      is3DMode: true,
     });
   });
 

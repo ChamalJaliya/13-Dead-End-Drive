@@ -3,18 +3,23 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Protocol : Read this file BEFORE beginning any implementation phase.
 #            Update this file IMMEDIATELY upon completing any phase gate.
-# Last sync: 2026-05-27 — GRID_21X15, 10-step detective, HUD overlays, chair rules
+# Last sync: 2026-06-01 — RFC 006 clean architecture (packages, GameSession, useUiStore)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 ---
 
 ## Current Active Phase
 
-**Phase 4 — Client UI** (active, feature-complete for solo/local play)
-> React HUD overlays, 2D/3D board, collapsible console, hand/deck/detective widgets.
-> Run `npm run dev` → solo or local multiplayer.
+**Phase 5 — Nest + Colyseus transport** (active)
+> `apps/game-server` — authoritative online play, Supabase persist, lobby REST.
+> Run `npm run dev` → client + game-server + bot-ai (docker compose).
 
-**Next:** Phase 3.6 — Reconnect & hand projection (transport polish).
+**Phase 4 — Client UI** (feature-complete for solo/local/online lobby)
+> Hybrid: solo/local client engine; online server-authoritative via Colyseus.
+
+**Next:** Supabase Auth JWT (`AUTH_REQUIRED=true`) + production deploy.
+
+**Architecture (RFC 006):** `@ded/*` packages, `GameSession` + `dispatchGameEvent`, `useUiStore` / `useGameStore` split, dependency-cruiser CI.
 
 ---
 
@@ -48,7 +53,9 @@
 | 3.3 | Broadcast Event Pipeline | ✅ Complete |
 | 3.4 | Event Router & Idempotency Guard | ✅ Complete |
 | 3.5 | Local Multiplayer Client + cross-tab sync | ✅ Complete |
-| 3.6 | Reconnect & Hand Projection | 🔲 Pending |
+| 3.6 | Reconnect & Hand Projection | ✅ Complete (Colyseus re-join + idempotency store) |
+| 3.7 | Nest + Colyseus game-server (`apps/game-server`) | ✅ Complete |
+| 3.8 | Online client (`ColyseusRemoteClient`, `playMode: online`) | ✅ Complete |
 
 ### Phase 4 — Client UI
 
@@ -63,6 +70,8 @@
 | 4.7 | Collapsible estate console | ✅ Complete |
 | 4.8 | HandPanel (bottom horizontal) | ✅ Complete |
 | 4.9 | DeckWidget + DetectiveWidget (10 slots) | ✅ Complete |
+| 4.10 | Solo vs bots + Python `bot-ai` service | ✅ Complete |
+| 4.11 | Client FX pipeline (audio, trap overlay, confetti, 2D/3D trap anim) | ✅ Complete |
 
 ---
 
@@ -95,8 +104,29 @@
 | `components/DetectiveWidget.tsx` | 10-slot detective bar | ✅ Stable |
 | `components/Scene3D.tsx` | R3F board + compass | ✅ Stable |
 | `components/GameBoard.ts` | 2D canvas board | ✅ Stable |
-| `store/useGameStore.ts` | Zustand game state | ✅ Stable |
+| `store/useGameStore.ts` | Zustand game state + `fxQueue` | ✅ Stable |
+| `fx/detectClientFxEvents.ts` | GameState diff → `ClientFxEvent[]` | ✅ Stable |
+| `fx/GameFxController.tsx` | Audio, trap overlay, confetti | ✅ Stable |
+| `audio/gameAudio.ts` | Procedural Web Audio singleton | ✅ Stable |
 | `multiplayer/localMultiplayerClient.ts` | Local rooms + chair revision | ✅ Stable |
+| `bots/botRegistry.ts` | Solo bot player IDs + names | ✅ Stable |
+| `bots/BotOrchestrator.ts` | Bot turn loop + HTTP/fallback | ✅ Stable |
+
+### Bots (`src/bots/`)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `legalActions.ts` | Enumerate valid `SocketEvent` options | ✅ Stable |
+| `heuristicFallback.ts` | Offline TS heuristic | ✅ Stable |
+| `buildBotEvent.ts` | Attach eventId/timestamp | ✅ Stable |
+
+### Bot AI service (`services/bot-ai/`)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `app/main.py` | FastAPI + `/health` | ✅ Stable |
+| `app/decide.py` | `POST /v1/decide` | ✅ Stable |
+| `app/strategies/heuristic.py` | Python heuristic scorer | ✅ Stable |
 
 ### Network (`src/network/`)
 

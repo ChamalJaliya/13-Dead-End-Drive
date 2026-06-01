@@ -238,3 +238,19 @@ Verification:
 - Putting hand cards only in the tall right console (wastes board space).
 - Compass overlay at `z-20` over HUD controls.
 - Documenting 13-step detective after 2026-05-27 rule change.
+
+---
+
+## Milestone 4.10 — Solo vs bots + Python `bot-ai`
+
+### Context
+- **Flow:** Lobby → `startSoloVsBots(name, 1|2|3, difficulty)` → `BotOrchestrator` on bot turns
+- **Legal moves:** `src/bots/legalActions.ts` (must match engine); Python only picks `actionIndex`
+- **Fallback:** `heuristicFallback.ts` when `/bot-api/v1/decide` fails
+- **Tests:** `botRegistry`, `legalActions`, `botOrchestrator`, `startSoloVsBots`; `services/bot-ai/tests`
+
+### Effective patterns
+1. **Masked state** — `filterStateForPlayer(state, botId)` before HTTP payload.
+2. **No hot-seat solo** — `resolveActingPlayerId` always returns `localPlayerId`; `isHumanTurn` gates UI.
+3. **Wire orchestrator** — end of `syncServerState` when `botPlayerIds.length > 0`.
+4. **TDD legal actions** — one `it()` per sub-phase; round-trip `processTurn` on fixtures.

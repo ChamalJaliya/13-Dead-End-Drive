@@ -10,6 +10,7 @@ import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { useGameStore } from '../store/useGameStore.js';
+import { useUiStore } from '../store/useUiStore.js';
 import type { GameState } from '../../types/game-state.js';
 import type { CellId, CharacterId } from '../../types/enums.js';
 import type { GridCell } from '../../types/entities.js';
@@ -25,10 +26,19 @@ import { WritingTable3D } from './3d/WritingTable3D.js';
 import { Painting3D }     from './3d/Painting3D.js';
 import { Piano3D }        from './3d/Piano3D.js';
 import { HeirPortrait3D } from './3d/HeirPortrait3D.js';
+import { TrapFx3D } from './3d/TrapFx3D.js';
+import { EliminatedPawn3D } from './3d/EliminatedPawn3D.js';
+import { getTrapCinematic } from '../cinematics/trapCinematics.js';
+import type { TrapId } from '../../types/enums.js';
 import {
   GRID_21X15_DINING_CHAIR_LAYOUT,
   gridCellCoords,
 } from '../../engine/boardDefinition.js';
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -75,6 +85,7 @@ function useScreenShake() {
   const initiated  = useRef(false);
 
   const triggerShake = useCallback((intensity: number) => {
+    if (prefersReducedMotion()) return;
     if (!initiated.current) {
       originRef.current.copy(camera.position);
       initiated.current = true;
@@ -94,54 +105,6 @@ function useScreenShake() {
   });
 
   return { triggerShake };
-}
-
-// ── Chandelier ─────────────────────────────────────────────────────────────────
-
-function Chandelier({
-  trapX, trapZ, isFalling, onImpact,
-}: { trapX: number; trapZ: number; isFalling: boolean; onImpact: () => void }) {
-  const groupRef       = useRef<THREE.Group>(null);
-  const velocityRef    = useRef(0);
-  const impactFired    = useRef(false);
-  const START_Y        = 7;
-  const TARGET_Y       = 0.5;
-
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    if (!isFalling) {
-      groupRef.current.position.y = START_Y;
-      velocityRef.current  = 0;
-      impactFired.current  = false;
-      return;
-    }
-    if (groupRef.current.position.y <= TARGET_Y) {
-      groupRef.current.position.y = TARGET_Y;
-      if (!impactFired.current) { impactFired.current = true; onImpact(); }
-      return;
-    }
-    velocityRef.current += 20 * delta;
-    groupRef.current.position.y -= velocityRef.current * delta;
-    if (groupRef.current.position.y < TARGET_Y) groupRef.current.position.y = TARGET_Y;
-  });
-
-  return (
-    <group ref={groupRef} position={[trapX, START_Y, trapZ]}>
-      <mesh position={[0, 2.8, 0]} castShadow>
-        <cylinderGeometry args={[0.05, 0.05, 5.6, 8]} />
-        <meshStandardMaterial color="#d4af37" metalness={0.95} roughness={0.05} />
-      </mesh>
-      <mesh position={[0, 0.4, 0]} castShadow>
-        <cylinderGeometry args={[0.75, 0.55, 0.18, 10]} />
-        <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.1} />
-      </mesh>
-      <mesh position={[0, 0, 0]} castShadow>
-        <sphereGeometry args={[0.32, 16, 16]} />
-        <meshStandardMaterial color="#ffcc00" emissive="#ffcc00" emissiveIntensity={isFalling ? 1.2 : 0.6} />
-      </mesh>
-      <pointLight color="#ffcc00" intensity={isFalling ? 10 : 4} distance={8} decay={2} />
-    </group>
-  );
 }
 
 // ── Board Tile ─────────────────────────────────────────────────────────────────
@@ -343,26 +306,66 @@ function InnerScene({
 }: InnerSceneProps) {
   const { triggerShake } = useScreenShake();
 
-  const selectedCharId = useGameStore((s) => s.selectedCharId);
-  const reachableCells = useGameStore((s) => s.reachableCells);
-  const prohibitedCells = useGameStore((s) => s.prohibitedCells);
-  const lastTrapFired  = useGameStore((s) => s.lastTrapFired);
+  const selectedCharId = useUiStore((s) => s.selectedCharId);
+  const reachableCells = useUiStore((s) => s.reachableCells);
+  const prohibitedCells = useUiStore((s) => s.prohibitedCells);
+  const lastTrapFired  = useUiStore((s) => s.lastTrapFired);
   const selectCharacter = useGameStore((s) => s.selectCharacter);
   const moveCharacter   = useGameStore((s) => s.moveCharacter);
   const clearTrapFired  = useGameStore((s) => s.clearTrapFired);
 
   const pulseRef           = useRef(0);
-  const fallingRef         = useRef(false);
   const prevTrapFiredRef   = useRef<typeof lastTrapFired>(null);
+  const [trapFxActive, setTrapFxActive] = useState(false);
+  const [fallenPawns, setFallenPawns] = useState<Map<CharacterId, number>>(new Map());
+  const prevGameState = useGameStore((s) => s.prevGameState);
 
   useEffect(() => {
     if (lastTrapFired && lastTrapFired !== prevTrapFiredRef.current) {
       prevTrapFiredRef.current = lastTrapFired;
-      if (lastTrapFired.trapId === 'CHANDELIER') fallingRef.current = true;
+      setTrapFxActive(true);
     } else if (!lastTrapFired) {
-      fallingRef.current = false;
+      setTrapFxActive(false);
     }
   }, [lastTrapFired]);
+
+  useEffect(() => {
+    if (!prevGameState) return;
+    const now = Date.now();
+    setFallenPawns((prev) => {
+      const next = new Map(prev);
+      let changed = false;
+      for (const ch of Object.values(gameState.characters)) {
+        if (
+          ch.status === 'ELIMINATED' &&
+          prevGameState.characters[ch.id]?.status === 'ALIVE' &&
+          !next.has(ch.id)
+        ) {
+          next.set(ch.id, now + 2000);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [gameState, prevGameState]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      setFallenPawns((prev) => {
+        let changed = false;
+        const next = new Map(prev);
+        for (const [cid, expiry] of prev) {
+          if (expiry <= now) {
+            next.delete(cid);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }, 200);
+    return () => window.clearInterval(id);
+  }, []);
 
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -429,10 +432,8 @@ function InnerScene({
   const reachableSet = useMemo(() => new Set(reachableCells), [reachableCells]);
   const prohibitedSet = useMemo(() => new Set(prohibitedCells), [prohibitedCells]);
 
-  const chandelierTile = useMemo(
-    () => Object.values(gameState.board).find((c) => c.trapRef === 'CHANDELIER') ?? null,
-    [gameState.board],
-  );
+  const activeTrapId: TrapId | null = lastTrapFired?.trapId ?? null;
+  const activeTrapCinematic = activeTrapId ? getTrapCinematic(activeTrapId) : null;
 
   const toWorld = useCallback((col: number, row: number) => [
     (col - centerCol) * GRID_SCALE,
@@ -449,6 +450,12 @@ function InnerScene({
     [gameState.board, toWorld],
   );
 
+  const trapWorldPos = useMemo(() => {
+    if (!lastTrapFired?.cellId) return null;
+    const [wx, wz] = worldForCell(lastTrapFired.cellId as CellId);
+    return { wx, wz };
+  }, [lastTrapFired, worldForCell]);
+
   const handleTileClick = useCallback((cellId: CellId) => {
     const char = Object.values(gameState.characters).find(
       (c) => c.position === cellId && c.status === 'ALIVE',
@@ -459,8 +466,26 @@ function InnerScene({
 
   const handleImpact = useCallback(() => {
     triggerShake(2.0);
-    setTimeout(() => { fallingRef.current = false; clearTrapFired(); }, 2800);
-  }, [triggerShake, clearTrapFired]);
+  }, [triggerShake]);
+
+  const handleTrapComplete = useCallback(() => {
+    setTrapFxActive(false);
+    clearTrapFired();
+  }, [clearTrapFired]);
+
+  useEffect(() => {
+    if (!trapFxActive || !activeTrapCinematic) return;
+    const t = window.setTimeout(handleTrapComplete, activeTrapCinematic.durationMs);
+    return () => window.clearTimeout(t);
+  }, [trapFxActive, activeTrapCinematic, handleTrapComplete]);
+
+  useEffect(() => {
+    if (!trapFxActive || !activeTrapCinematic) return;
+    const style = activeTrapCinematic.fallStyle;
+    if (style === 'drop' || style === 'burst') return;
+    const t = window.setTimeout(handleImpact, activeTrapCinematic.impactDelayMs);
+    return () => window.clearTimeout(t);
+  }, [trapFxActive, activeTrapCinematic, handleImpact]);
 
   return (
     <>
@@ -569,7 +594,12 @@ function InnerScene({
       {/* ── 3D Suit of Armor Statue Obstacle (Spanning A2:A3 B2:B3, centered between A2/A3/B2/B3) ── */}
       {gameState.boardVersion === 'GRID_21X15' && (() => {
         const [tx, tz] = toWorld(0.5, 12.5); // Center of A2, A3, B2, B3
-        return <Statue3D position={[tx, 0, tz]} />;
+        return (
+          <Statue3D
+            position={[tx, 0, tz]}
+            animStrike={trapFxActive && activeTrapId === 'SUIT_OF_ARMOR'}
+          />
+        );
       })()}
 
       {/* ── 3D Gothic Fireplace Obstacle (Spanning H13:N13 to H15:N15, centered at K14) ── */}
@@ -577,7 +607,10 @@ function InnerScene({
         const [tx, tz] = toWorld(10, 1); // Column index 10 (K), Row index 1 (14)
         return (
           <group>
-            <Fireplace3D position={[tx, 0, tz]} />
+            <Fireplace3D
+              position={[tx, 0, tz]}
+              animBurst={trapFxActive && activeTrapId === 'FIREPLACE'}
+            />
             <HeirPortrait3D position={[tx, 0, tz]} />
           </group>
         );
@@ -586,13 +619,26 @@ function InnerScene({
       {/* ── 3D Mahogany Bookshelf Obstacle (Spanning U3:U6, centered at U4.5) ── */}
       {gameState.boardVersion === 'GRID_21X15' && (() => {
         const [tx, tz] = toWorld(20, 10.5); // Column index 20 (U), Row index 10.5 (center of ranks 3 to 6)
-        return <Bookshelf3D position={[tx, 0, tz]} rotation={Math.PI} scale={[1, 1, 1.41]} />;
+        return (
+          <Bookshelf3D
+            position={[tx, 0, tz]}
+            rotation={Math.PI}
+            scale={[1, 1, 1.41]}
+            animTip={trapFxActive && activeTrapId === 'BOOKCASE'}
+          />
+        );
       })()}
 
       {/* ── 3D Grand Staircase Obstacle (Spanning C14:G15, centered at E14.5) ── */}
       {gameState.boardVersion === 'GRID_21X15' && (() => {
         const [tx, tz] = toWorld(4, 0.5); // Column index 4 (E), Row index 0.5 (center of 14/15)
-        return <Staircase3D position={[tx, 0, tz]} width={8.85} />;
+        return (
+          <Staircase3D
+            position={[tx, 0, tz]}
+            width={8.85}
+            animCollapse={trapFxActive && activeTrapId === 'STAIRS'}
+          />
+        );
       })()}
 
       {/* ── 3D Small Corner Sofa (O5/O6/P6 — L-shape, 3 squares) ── */}
@@ -749,17 +795,24 @@ function InnerScene({
         );
       })}
 
-      {/* ── Chandelier ── */}
-      {chandelierTile && (() => {
-        const [cx, cz] = worldForCell(chandelierTile.cellId);
-        return (
-          <Chandelier
-            trapX={cx} trapZ={cz}
-            isFalling={fallingRef.current}
-            onImpact={handleImpact}
-          />
-        );
-      })()}
+      {/* ── Fallen pawns (brief elimination presentation) ── */}
+      {Array.from(fallenPawns.entries()).map(([charId]) => {
+        const ch = gameState.characters[charId];
+        if (!ch?.position) return null;
+        const [cx, cz] = worldForCell(ch.position);
+        return <EliminatedPawn3D key={`fallen-${charId}`} charId={charId} cx={cx} cz={cz} />;
+      })}
+
+      {/* ── Trap cell FX (drop / burst at trap tile) ── */}
+      {trapWorldPos && activeTrapCinematic && (
+        <TrapFx3D
+          worldX={trapWorldPos.wx}
+          worldZ={trapWorldPos.wz}
+          fallStyle={activeTrapCinematic.fallStyle}
+          isActive={trapFxActive}
+          onImpact={handleImpact}
+        />
+      )}
 
       {!isCameraAnimating && (
         <OrbitControls

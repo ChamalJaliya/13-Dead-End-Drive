@@ -6,70 +6,9 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useGameStore } from '../store/useGameStore.js';
+import { useUiStore } from '../store/useUiStore.js';
+import { gameAudio } from '../audio/gameAudioInstance.js';
 import type { GameState } from '../../types/game-state.js';
-
-// ── Tiny procedural audio (no external assets needed) ─────────────────────────
-
-function playDiceSound() {
-  try {
-    const ctx = new AudioContext();
-    const master = ctx.createGain();
-    master.gain.value = 0.38;
-    master.connect(ctx.destination);
-
-    const playTone = (freq: number, start: number, dur: number, type: OscillatorType = 'square', vol = 0.18) => {
-      const osc = ctx.createOscillator();
-      const g   = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-      g.gain.setValueAtTime(vol, ctx.currentTime + start);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-      osc.connect(g);
-      g.connect(master);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + dur);
-    };
-
-    const playNoise = (start: number, dur: number, vol = 0.12) => {
-      const bufLen = Math.ceil(ctx.sampleRate * dur);
-      const buf    = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-      const data   = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) {
-        data[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
-      }
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      const g = ctx.createGain();
-      g.gain.value = vol;
-      src.connect(g);
-      g.connect(master);
-      src.start(ctx.currentTime + start);
-    };
-
-    // Rattling tumble sequence
-    playNoise(0.00, 0.06, 0.22);
-    playTone(210, 0.00, 0.05, 'square', 0.14);
-    playNoise(0.07, 0.06, 0.18);
-    playTone(170, 0.07, 0.05, 'square', 0.12);
-    playNoise(0.14, 0.06, 0.14);
-    playTone(140, 0.14, 0.05, 'square', 0.10);
-    // Final landing clunk
-    playNoise(0.22, 0.12, 0.30);
-    playTone(90, 0.22, 0.18, 'sawtooth', 0.20);
-    playTone(55, 0.26, 0.25, 'square',   0.18);
-
-    // Doubles sparkle
-    setTimeout(() => {
-      playTone(880, 0.00, 0.08, 'sine', 0.10);
-      playTone(1100, 0.06, 0.08, 'sine', 0.08);
-      playTone(1320, 0.12, 0.10, 'sine', 0.07);
-    }, 420);
-
-    setTimeout(() => ctx.close(), 1200);
-  } catch {
-    /* Safari / blocked autoplay — silently skip */
-  }
-}
 
 // ── Die-face dot layout map ────────────────────────────────────────────────────
 // Each entry is an array of [col, row] positions in a 3×3 grid (0-indexed)
@@ -131,6 +70,11 @@ interface DicePanelProps {
 
 export function DicePanel({ gameState }: DicePanelProps) {
   const { rollDice, chooseMovementPlan, changePortraitOnDoubles } = useGameStore();
+  const isBotThinking = useUiStore((s) => s.isBotThinking);
+  const isHumanTurn = useGameStore((s) => {
+    if (!s.gameState || isBotThinking) return false;
+    return s.gameState.activePlayerId === s.localPlayerId;
+  });
   const [isOpen,    setIsOpen]    = useState(true);
   const [isRolling, setIsRolling] = useState(false);
   const rollLockRef = useRef(false);
@@ -147,10 +91,11 @@ export function DicePanel({ gameState }: DicePanelProps) {
   const d2Display = isRolling ? Math.ceil(Math.random() * 6) : (lastRoll?.die2 ?? 1);
 
   const handleRoll = useCallback(() => {
-    if (rollLockRef.current || !awaitingRoll) return;
+    if (rollLockRef.current || !awaitingRoll || !isHumanTurn || isBotThinking) return;
     rollLockRef.current = true;
     setIsRolling(true);
-    playDiceSound();
+    gameAudio.ensureContext();
+    gameAudio.playDiceRoll();
 
     // After animation (450ms) commit the engine roll
     setTimeout(() => {
@@ -158,7 +103,7 @@ export function DicePanel({ gameState }: DicePanelProps) {
       setIsRolling(false);
       rollLockRef.current = false;
     }, 460);
-  }, [awaitingRoll, rollDice]);
+  }, [awaitingRoll, rollDice, isHumanTurn, isBotThinking]);
 
   return (
     <div className="dice-panel">
@@ -214,7 +159,7 @@ export function DicePanel({ gameState }: DicePanelProps) {
             </div>
           )}
 
-          {isDoubles && canPlanMove && !isRolling && (
+          {isDoubles && canPlanMove && !isRolling && isHumanTurn && !isBotThinking && (
             <button
               type="button"
               onClick={() => changePortraitOnDoubles()}
@@ -224,7 +169,7 @@ export function DicePanel({ gameState }: DicePanelProps) {
             </button>
           )}
 
-          {canPlanMove && !isRolling && (
+          {canPlanMove && !isRolling && isHumanTurn && !isBotThinking && (
             <div className="flex flex-col gap-1.5">
               <span className="text-[9px] uppercase tracking-widest text-ghost-500 font-bold">
                 Use dice as
@@ -261,7 +206,7 @@ export function DicePanel({ gameState }: DicePanelProps) {
             <button
               id="dice-roll-btn"
               onClick={handleRoll}
-              disabled={isRolling}
+              disabled={isRolling || !isHumanTurn || isBotThinking}
               className="dice-panel__roll-btn"
               style={{ opacity: isRolling ? 0.6 : 1 }}
             >

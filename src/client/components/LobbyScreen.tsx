@@ -1,17 +1,25 @@
 /**
  * LobbyScreen.tsx
- * Gothic welcome screen — solo play or multiplayer room creation/join.
- * Layout rhythm uses lobby-* component classes from style.css.
+ * Gothic welcome screen — solo vs bots or multiplayer room creation/join.
  */
 
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore.js';
+import type { BotDifficulty } from '../../types/bot-api.js';
+import type { OpponentCount } from '../bots/botRegistry.js';
+
+const OPPONENT_OPTIONS: readonly OpponentCount[] = [1, 2, 3] as const;
+const DIFFICULTY_OPTIONS: readonly BotDifficulty[] = ['EASY', 'NORMAL', 'HARD'] as const;
+
+const ONLINE_ENABLED = import.meta.env.VITE_ONLINE_MULTIPLAYER === 'true';
 
 export function LobbyScreen() {
   const {
-    startSoloGame,
+    startSoloVsBots,
     hostRoom,
+    hostOnlineRoom,
     joinRoom,
+    joinOnlineRoom,
     roomCode,
     gameState,
     localPlayerId,
@@ -21,21 +29,39 @@ export function LobbyScreen() {
   } = useGameStore();
 
   const [playerName, setPlayerName] = useState('');
+  const [opponentCount, setOpponentCount] = useState<OpponentCount>(1);
+  const [difficulty, setDifficulty] = useState<BotDifficulty>('NORMAL');
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [joinError, setJoinError] = useState('');
 
   const canUseName = playerName.trim().length > 0;
   const canJoin = canUseName && roomCodeInput.trim().length >= 4;
+  const canStartSolo = canUseName;
   const playerCount = Object.keys(gameState?.players ?? {}).length;
   const isHost = localPlayerId === gameState?.turnOrder[0];
+  const totalPlayers = 1 + opponentCount;
 
   const handleSolo = () => {
-    startSoloGame();
+    if (!canStartSolo) return;
+    startSoloVsBots(playerName.trim(), opponentCount, difficulty);
   };
 
   const handleHost = () => {
     if (!canUseName) return;
     hostRoom(playerName.trim());
+  };
+
+  const handleHostOnline = () => {
+    if (!canUseName) return;
+    void hostOnlineRoom(playerName.trim());
+  };
+
+  const handleJoinOnline = () => {
+    if (!canJoin) return;
+    setJoinError('');
+    void joinOnlineRoom(playerName.trim(), roomCodeInput.trim().toUpperCase()).catch(() => {
+      setJoinError('Online room not found or server offline.');
+    });
   };
 
   const handleJoin = () => {
@@ -137,26 +163,14 @@ export function LobbyScreen() {
           <div className="lobby-card animate-trap-in">
             <div className="lobby-card-body">
               <section className="lobby-panel">
-                <p className="lobby-section-title">Quick start</p>
-                <button
-                  type="button"
-                  id="lobby-btn-solo"
-                  onClick={handleSolo}
-                  className="lobby-btn lobby-btn--solo"
-                >
-                  <span>Play solo</span>
-                  <span className="lobby-btn--solo-sub">2 players on one screen</span>
-                </button>
-              </section>
-
-              <section className="lobby-panel lobby-panel--split">
+                <p className="lobby-section-title">Play solo vs AI</p>
                 <div className="lobby-field">
-                  <label htmlFor="lobby-input-name" className="lobby-label">
+                  <label htmlFor="lobby-input-name-solo" className="lobby-label">
                     Your name
                   </label>
                   <input
                     type="text"
-                    id="lobby-input-name"
+                    id="lobby-input-name-solo"
                     value={playerName}
                     onChange={(e) => setPlayerName(e.target.value)}
                     placeholder="Enter your name…"
@@ -166,6 +180,59 @@ export function LobbyScreen() {
                   />
                 </div>
 
+                <div className="lobby-field">
+                  <span className="lobby-label">AI opponents</span>
+                  <div className="lobby-opponent-row" role="group" aria-label="Number of AI opponents">
+                    {OPPONENT_OPTIONS.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={
+                          opponentCount === n
+                            ? 'lobby-btn lobby-btn--opponent lobby-btn--opponent-active'
+                            : 'lobby-btn lobby-btn--opponent'
+                        }
+                        onClick={() => setOpponentCount(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="lobby-room-hint">{totalPlayers} players total (you + {opponentCount} bots)</p>
+                </div>
+
+                <div className="lobby-field">
+                  <label htmlFor="lobby-select-difficulty" className="lobby-label">
+                    Difficulty
+                  </label>
+                  <select
+                    id="lobby-select-difficulty"
+                    className="lobby-input"
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value as BotDifficulty)}
+                  >
+                    {DIFFICULTY_OPTIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d.charAt(0) + d.slice(1).toLowerCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  id="lobby-btn-solo"
+                  onClick={handleSolo}
+                  disabled={!canStartSolo}
+                  className="lobby-btn lobby-btn--solo"
+                >
+                  <span>Start solo game</span>
+                  <span className="lobby-btn--solo-sub">Play against AI opponents</span>
+                </button>
+              </section>
+
+              <section className="lobby-panel lobby-panel--split">
+                <p className="lobby-section-title">Local multiplayer</p>
                 <button
                   type="button"
                   id="lobby-btn-host"
@@ -173,7 +240,7 @@ export function LobbyScreen() {
                   disabled={!canUseName}
                   className="lobby-btn lobby-btn--host"
                 >
-                  Host new room
+                  Host local room
                 </button>
 
                 <div className="lobby-join-panel">
@@ -203,6 +270,40 @@ export function LobbyScreen() {
 
                 {joinError && <p className="lobby-error">{joinError}</p>}
               </section>
+
+              {ONLINE_ENABLED && (
+                <section className="lobby-panel lobby-panel--split">
+                  <p className="lobby-section-title">Play online</p>
+                  <p className="lobby-room-hint">Server-authoritative — requires game-server on :2567</p>
+                  <button
+                    type="button"
+                    onClick={handleHostOnline}
+                    disabled={!canUseName}
+                    className="lobby-btn lobby-btn--host"
+                  >
+                    Host online room
+                  </button>
+                  <div className="lobby-join-row">
+                    <input
+                      type="text"
+                      value={roomCodeInput}
+                      onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                      placeholder="Room code"
+                      maxLength={6}
+                      autoComplete="off"
+                      className="lobby-input lobby-input--code"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleJoinOnline}
+                      disabled={!canJoin}
+                      className="lobby-btn lobby-btn--join"
+                    >
+                      Join online
+                    </button>
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         )}

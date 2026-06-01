@@ -11,19 +11,27 @@ import * as THREE from 'three';
 interface Fireplace3DProps {
   position?: [number, number, number];
   rotation?: number;
+  animBurst?: boolean;
 }
 
-export function Fireplace3D({ position = [0, 0, 0], rotation = 0 }: Fireplace3DProps) {
+export function Fireplace3D({
+  position = [0, 0, 0],
+  rotation = 0,
+  animBurst = false,
+}: Fireplace3DProps) {
   const fireLightRef = useRef<THREE.PointLight>(null);
   const flameGroupRef = useRef<THREE.Group>(null);
+  const burstRef = useRef(0);
 
-  // Programmatic flame flicker and micro-animation
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const elapsed = clock.getElapsedTime();
-    
-    // Flickering firelight intensity
+    const target = animBurst ? 1 : 0;
+    burstRef.current = THREE.MathUtils.lerp(burstRef.current, target, delta * 8);
+    const burstBoost = burstRef.current * 28;
+
     if (fireLightRef.current) {
-      fireLightRef.current.intensity = 14 + Math.sin(elapsed * 15) * 2.5 + Math.cos(elapsed * 32) * 1.2;
+      fireLightRef.current.intensity =
+        14 + burstBoost + Math.sin(elapsed * 15) * 2.5 + Math.cos(elapsed * 32) * 1.2;
     }
 
     // Micro-scale pulsing for the visual flames to look alive

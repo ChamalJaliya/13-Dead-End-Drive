@@ -6,16 +6,28 @@
 import type { TrapId } from '../../types/enums.js';
 
 export interface TrapCinematicConfig {
-  readonly trapId:       TrapId;
-  readonly title:        string;
-  readonly icon:         string;
-  readonly accentColor:  string;
-  readonly glowShadow:   string;
-  readonly animClass:    string;
-  readonly description:  string;
-  readonly particleHue:  number;
-  readonly fallStyle:    'drop' | 'swing' | 'burst' | 'slide' | 'tip';
+  readonly trapId:         TrapId;
+  readonly title:          string;
+  readonly icon:           string;
+  readonly accentColor:    string;
+  readonly glowShadow:     string;
+  readonly animClass:      string;
+  readonly description:    string;
+  readonly particleHue:    number;
+  readonly fallStyle:      'drop' | 'swing' | 'burst' | 'slide' | 'tip';
+  /** Total 3D/overlay FX duration (ms) */
+  readonly durationMs:     number;
+  /** Delay before elimination thud SFX after trap impact (ms) */
+  readonly impactDelayMs:  number;
 }
+
+const FALL_IMPACT_MS: Record<TrapCinematicConfig['fallStyle'], number> = {
+  drop:  280,
+  swing: 120,
+  tip:   150,
+  slide: 200,
+  burst: 100,
+};
 
 export const TRAP_CINEMATICS: Record<TrapId, TrapCinematicConfig> = {
   CHANDELIER: {
@@ -27,7 +39,9 @@ export const TRAP_CINEMATICS: Record<TrapId, TrapCinematicConfig> = {
     animClass:   'cinematic-anim-chandelier',
     description: 'The golden chandelier snaps from its chain and plummets in a shower of crystal.',
     particleHue: 45,
-    fallStyle:   'drop',
+    fallStyle:       'drop',
+    durationMs:      2800,
+    impactDelayMs:   FALL_IMPACT_MS.drop,
   },
   SUIT_OF_ARMOR: {
     trapId:      'SUIT_OF_ARMOR',
@@ -38,7 +52,9 @@ export const TRAP_CINEMATICS: Record<TrapId, TrapCinematicConfig> = {
     animClass:   'cinematic-anim-armor',
     description: 'The rusted knight lurches forward — its blade finds flesh before clattering still.',
     particleHue: 210,
-    fallStyle:   'swing',
+    fallStyle:       'swing',
+    durationMs:      2800,
+    impactDelayMs:   FALL_IMPACT_MS.swing,
   },
   BOOKCASE: {
     trapId:      'BOOKCASE',
@@ -49,7 +65,9 @@ export const TRAP_CINEMATICS: Record<TrapId, TrapCinematicConfig> = {
     animClass:   'cinematic-anim-bookcase',
     description: 'Leather-bound volumes rain down as the shelf tips with a thunderous crack.',
     particleHue: 30,
-    fallStyle:   'tip',
+    fallStyle:       'tip',
+    durationMs:      2800,
+    impactDelayMs:   FALL_IMPACT_MS.tip,
   },
   STAIRS: {
     trapId:      'STAIRS',
@@ -60,7 +78,9 @@ export const TRAP_CINEMATICS: Record<TrapId, TrapCinematicConfig> = {
     animClass:   'cinematic-anim-stairs',
     description: 'The steps give way — the victim vanishes into the darkness below.',
     particleHue: 160,
-    fallStyle:   'slide',
+    fallStyle:       'slide',
+    durationMs:      2800,
+    impactDelayMs:   FALL_IMPACT_MS.slide,
   },
   FIREPLACE: {
     trapId:      'FIREPLACE',
@@ -71,7 +91,9 @@ export const TRAP_CINEMATICS: Record<TrapId, TrapCinematicConfig> = {
     animClass:   'cinematic-anim-fireplace',
     description: 'Flames erupt from the hearth, engulfing the trap space in blistering heat.',
     particleHue: 15,
-    fallStyle:   'burst',
+    fallStyle:       'burst',
+    durationMs:      2800,
+    impactDelayMs:   FALL_IMPACT_MS.burst,
   },
 };
 

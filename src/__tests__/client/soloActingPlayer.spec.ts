@@ -1,7 +1,7 @@
-// soloActingPlayer.spec.ts — resolveActingPlayerId for solo hot-seat control
+// soloActingPlayer.spec.ts — resolveActingPlayerId and isHumanTurn
 
 import { describe, expect, it } from 'vitest';
-import { resolveActingPlayerId } from '../../client/soloActingPlayer.js';
+import { resolveActingPlayerId, isHumanTurn } from '../../client/soloActingPlayer.js';
 import {
   makeGameState,
   PLAYER_A_ID,
@@ -9,24 +9,21 @@ import {
 } from '../fixtures/gameState.fixtures.js';
 
 describe('resolveActingPlayerId', () => {
-  it('returns activePlayerId in solo mode even when local seat is Player A', () => {
-    const state = makeGameState({
-      activePlayerId: PLAYER_B_ID,
-    });
-    expect(resolveActingPlayerId(state, PLAYER_A_ID, 'solo')).toBe(PLAYER_B_ID);
-  });
-
-  it('returns localPlayerId in multiplayer when it is not the active turn', () => {
-    const state = makeGameState({
-      activePlayerId: PLAYER_B_ID,
-    });
-    expect(resolveActingPlayerId(state, PLAYER_A_ID, 'multiplayer')).toBe(PLAYER_A_ID);
-  });
-
-  it('returns activePlayerId in solo when local seat matches active', () => {
-    const state = makeGameState({
-      activePlayerId: PLAYER_A_ID,
-    });
+  it('always returns localPlayerId in solo mode', () => {
+    const state = makeGameState({ activePlayerId: PLAYER_B_ID });
     expect(resolveActingPlayerId(state, PLAYER_A_ID, 'solo')).toBe(PLAYER_A_ID);
+  });
+
+  it('returns localPlayerId in local mode', () => {
+    const state = makeGameState({ activePlayerId: PLAYER_B_ID });
+    expect(resolveActingPlayerId(state, PLAYER_A_ID, 'local')).toBe(PLAYER_A_ID);
+  });
+});
+
+describe('isHumanTurn', () => {
+  it('is true in solo only when active seat is the local human', () => {
+    const state = makeGameState({ activePlayerId: PLAYER_A_ID });
+    expect(isHumanTurn(state, PLAYER_A_ID, 'solo')).toBe(true);
+    expect(isHumanTurn(state, PLAYER_B_ID, 'solo')).toBe(false);
   });
 });

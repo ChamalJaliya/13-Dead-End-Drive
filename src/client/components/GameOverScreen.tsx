@@ -47,7 +47,8 @@ export function GameOverScreen({ gameState }: GameOverScreenProps) {
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: 'rgba(5,6,8,0.88)', backdropFilter: 'blur(8px)' }}
     >
-      <div className="glass rounded-3xl p-8 max-w-sm w-full mx-4 text-center animate-trap-in flex flex-col gap-5"
+      <div
+        className={`glass rounded-3xl p-8 max-w-sm w-full mx-4 text-center animate-trap-in flex flex-col gap-5${isWinner ? ' shimmer-effect' : ''}`}
         style={{
           border: `1px solid ${isWinner ? 'hsla(45,95%,55%,0.5)' : 'hsla(0,85%,60%,0.4)'}`,
           boxShadow: isWinner

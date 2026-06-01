@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore.js';
+import { useUiStore } from '../store/useUiStore.js';
 import { GameBoardView } from './GameBoard.js';
 import type { GameState } from '../../types/game-state.js';
 
@@ -17,11 +18,13 @@ export function Scene2D({ gameState }: Scene2DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewRef   = useRef<GameBoardView | null>(null);
 
-  const selectedCharId = useGameStore((s) => s.selectedCharId);
-  const highlightCells = useGameStore((s) => s.highlightCells);
-  const prohibitedCells = useGameStore((s) => s.prohibitedCells);
+  const selectedCharId = useUiStore((s) => s.selectedCharId);
+  const highlightCells = useUiStore((s) => s.highlightCells);
+  const prohibitedCells = useUiStore((s) => s.prohibitedCells);
+  const eliminationFlashNonce = useUiStore((s) => s.eliminationFlashNonce);
   const selectCharacter = useGameStore((s) => s.selectCharacter);
   const moveCharacter   = useGameStore((s) => s.moveCharacter);
+  const prevFlashNonce = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -90,6 +93,13 @@ export function Scene2D({ gameState }: Scene2DProps) {
       viewRef.current.setProhibitedCells(prohibitedCells);
     }
   }, [highlightCells, prohibitedCells]);
+
+  useEffect(() => {
+    if (eliminationFlashNonce > prevFlashNonce.current) {
+      prevFlashNonce.current = eliminationFlashNonce;
+      viewRef.current?.triggerEliminationFlash();
+    }
+  }, [eliminationFlashNonce]);
 
   return (
     <div className="w-full h-full relative bg-mansion-950 flex flex-col items-center justify-center">

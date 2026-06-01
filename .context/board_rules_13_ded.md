@@ -4,7 +4,7 @@
 
 **Not in scope:** [1313 Dead End Drive](https://www.geekyhobbies.com/1313-dead-end-drive-board-game-review-and-rules/) (2002 sequel).
 
-**Engine board:** `GRID_21X15` — 21×15 grid, algebraic `A1`–`U15`, 315 cells. **No secret passages** in this release.
+**Engine board:** `GRID_21X15` — 21×15 grid, algebraic `A1`–`U15`, 315 cells. **Secret passages** (`A15`, `U15`, `E10`, `Q10`, `K14`) when `ADVANCED` + `SECRET_PASSAGES` module is enabled.
 
 ---
 
@@ -14,8 +14,8 @@
 |------|------|
 | Pawns | 12 guests on **12 dining chairs** (one pawn per chair; deterministic chair assignment in engine) |
 | Chair cells | `J5` `J6` `J7` `J8` `J9` `K5` `K9` `L5` `L6` `L7` `L8` `L9` |
-| Rooting cards | Dealt face-down to owner only: **2p = 4 visible + 2 secret each**, **3p = 4 each**, **4p = 3 each** |
-| Portrait | Game **starts with Aunt Agatha** in the fireplace (`AUNT_AGATHA`). On **doubles**, active player **may** rotate to the top guest on the shuffled stack (optional). Forced rotation when the featured guest dies. |
+| Rooting cards | Dealt to owner only (opponents cannot see): **2p = 6 each**, **3p = 4 each**, **4p = 3 each** — all visible on your HUD (G01; no secret rooting deal) |
+| Portrait | **13-card** shuffled stack (12 guests + Aunt Agatha). Game **starts** showing **Aunt Agatha** (card still in stack). **First doubles:** remove Agatha from stack, reveal top **alive** guest. **Later doubles (optional, once/turn):** alive featured guest → bottom of stack; dead featured guest → removed from stack; reveal next top **alive** card (skip dead). Forced advance when featured guest dies (trap). |
 | Trap deck | **29 cards** (10 detective, 4 wild, 5 single-trap, 10 dual-trap combos), shuffled |
 | Detective | **10 active slots**; **slot 10 = at the front door** |
 | Exit | **`K1`** (front door) |
@@ -66,11 +66,12 @@ Additionally: cannot land on **trap zones** while any pawn remains on red chairs
 
 ---
 
-## Rooting cards & secrets
+## Rooting cards (G01)
 
-- Visible and secret rooting cards are **known only to their owner** during play (`filterStateForPlayer` preserves owner’s `secretCharacterIds`).
-- When a rooted guest **dies**, reveal **only that guest’s card** via `exposedRooting` (which player was rooting for them). **Do not** expose remaining secret cards.
-- **2-player endgame:** full secret reveal on `GAME_OVER` when `secretCardsRevealed` is set.
+- All rooting guests are on **your HUD** (`characterIds`). Opponents cannot see your hand (`filterStateForPlayer`).
+- **2p = 6**, **3p = 4**, **4p = 3** guests each (no hidden secret rooting deal).
+- When a rooted guest **dies**, reveal **only that guest’s owner** via `exposedRooting` (other cards stay private).
+- `secretCharacterIds` / `secretCardsRevealed` are legacy schema fields (unused in new deals).
 
 ---
 
@@ -78,7 +79,7 @@ Additionally: cannot land on **trap zones** while any pawn remains on red chairs
 
 | # | Condition | Winner |
 |---|-----------|--------|
-| 1 | **Featured portrait** guest (not Aunt Agatha) reaches **`K1`** alive | Player who holds **that same guest’s** rooting card (visible or secret). Another guest at `K1` does not count. |
+| 1 | **Featured portrait** guest (not Aunt Agatha) reaches **`K1`** alive | Player who holds **that same guest’s** rooting card. Another guest at `K1` does not count. |
 | 2 | Only **one player** still has a living rooted guest in the mansion | That player |
 | 3 | Detective reaches the door (**10 steps**) | Player holding the **current portrait** guest’s rooting card (not Aunt Agatha) |
 
@@ -87,9 +88,23 @@ Additionally: cannot land on **trap zones** while any pawn remains on red chairs
 ## Movement constraints
 
 - Orthogonal only on `GRID_21X15`; full die value must be used.
-- No passing through or landing on other pawns or furniture obstacles.
+- No passing through or landing on other pawns or **furniture obstacles** (71 cells — see `GRID_21X15_OBSTACLE_CATALOG` / `data/gdd_board_nodes.json`).
 - **Red chairs / trap zones:** see Opening chair phase above.
-- **Secret passages:** not used in `GRID_21X15` release.
+- **Secret passages (STANDARD):** off. **ADVANCED** + `SECRET_PASSAGES`: teleport between `A15`, `U15`, `E10`, `Q10`, `K14` for 1 pip.
+
+---
+
+## Rule profiles (RFC 007)
+
+| Profile | Behavior |
+|---------|----------|
+| `STANDARD` | G01 rules only; `enabledModules` ignored |
+| `ADVANCED` | Host enables modules in lobby (`LobbyRulesPanel`) |
+
+| Module | Effect |
+|--------|--------|
+| `SECRET_PASSAGES` | Five linked teleport cells on grid |
+| `EXTENDED_TRAP_DECK` | `buildExtendedDeck()` (same 29-card counts; experimental IDs) |
 
 ---
 
@@ -106,8 +121,11 @@ Additionally: cannot land on **trap zones** while any pawn remains on red chairs
 | Trap pause | `pendingTrapCell`, `PLAY_TRAP_CARD`, `DRAW_TRAP_CARD`, `DECLINE_TRAP` |
 | Detective chain | `drawTrapCardFromDeck` + `advanceDetective` (10 steps) |
 | Per-death rooting reveal | `exposedRooting` (`rootingReveal.ts`) |
-| Hand masking | `filterStateForPlayer` (owner sees own secrets) |
+| Hand masking | `filterStateForPlayer` (owner sees own rooting + hand) |
 | Stale chair repair | `repairGridChairSpawns`, `gridChairSpawnNeedsRepair` |
+| Obstacle catalog | `GRID_21X15_OBSTACLE_CATALOG` |
+| Rule context | `buildRuleContext`, `packages/engine/src/rules/` |
+| Lobby rules | `setLobbyRuleSettings`, `updateLobbyRules` (local host) |
 
 ---
 

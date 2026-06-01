@@ -11,6 +11,10 @@ import {
   GRID_21X15_RED_CHAIRS,
 } from '../../engine/boardDefinition.js';
 import type { GameState } from '../../types/game-state.js';
+import {
+  DEFAULT_ENABLED_MODULES,
+  DEFAULT_RULE_PROFILE,
+} from '../../types/rule-profile.js';
 import { CHARACTER_IDS } from '../../types/enums.js';
 import { DETECTIVE_TRACK_MAX_STEPS } from '../../types/enums.js';
 import { buildDeck } from '../../engine/cardDeck.js';
@@ -20,6 +24,8 @@ function makeLobbyStub(): GameState {
   const now = '2026-06-01T00:00:00.000Z';
   return {
     gameId:         'lobby-room-1',
+    ruleProfile:    DEFAULT_RULE_PROFILE,
+    enabledModules: DEFAULT_ENABLED_MODULES,
     boardVersion:   'GRID_21X15',
     phase:          'LOBBY',
     subPhase:       'AWAITING_ROLL',
@@ -124,22 +130,32 @@ describe('gameInitializer', () => {
     expect(redChairCount).toBe(12);
   });
 
-  it('deals four visible and two hidden secret cards per player in two-player games', () => {
+  it('deals six visible rooting guests per player in two-player games (G01)', () => {
     const state = initializeGame('game-setup-2', ['p1', 'p2'], { p1: 'A', p2: 'B' });
-    expect(state.players['p1']!.characterIds).toHaveLength(4);
-    expect(state.players['p2']!.characterIds).toHaveLength(4);
-    expect(state.players['p1']!.secretCharacterIds).toHaveLength(2);
-    expect(state.players['p2']!.secretCharacterIds).toHaveLength(2);
-    expect(state.players['p1']!.hasHiddenSecretCard).toBe(true);
+    expect(state.players['p1']!.characterIds).toHaveLength(6);
+    expect(state.players['p2']!.characterIds).toHaveLength(6);
+    expect(state.players['p1']!.secretCharacterIds).toHaveLength(0);
+    expect(state.players['p2']!.secretCharacterIds).toHaveLength(0);
+    expect(state.players['p1']!.hasHiddenSecretCard).toBe(false);
 
     const allDealt = [
       ...state.players['p1']!.characterIds,
       ...state.players['p2']!.characterIds,
-      ...state.players['p1']!.secretCharacterIds,
-      ...state.players['p2']!.secretCharacterIds,
     ];
     expect(new Set(allDealt).size).toBe(12);
-    expect(state.secretCardsRevealed).toBe(false);
+    expect(state.ruleProfile).toBe('STANDARD');
+    expect(state.enabledModules).toEqual([]);
+  });
+
+  it('persists ruleProfile and enabledModules from InitializeGameOptions', () => {
+    const state = initializeGame(
+      'game-setup-rules',
+      ['p1', 'p2'],
+      { p1: 'A', p2: 'B' },
+      { ruleProfile: 'ADVANCED', enabledModules: ['SECRET_PASSAGES'] },
+    );
+    expect(state.ruleProfile).toBe('ADVANCED');
+    expect(state.enabledModules).toEqual(['SECRET_PASSAGES']);
   });
 
   it('uses GRID_21X15 board by default', () => {
@@ -154,7 +170,8 @@ describe('gameInitializer', () => {
     const featuredCount = Object.values(state.characters).filter((c) => c.isPortraitHeir).length;
     expect(featuredCount).toBe(0);
     expect(state.activePortrait.currentHeirId).toBe('AUNT_AGATHA');
-    expect(state.activePortrait.portraitStack).toHaveLength(12);
+    expect(state.activePortrait.portraitStack).toHaveLength(13);
+    expect(state.activePortrait.portraitStack).toContain('AUNT_AGATHA');
     expect(state.activePortrait.lastChangedReason).toBe('OPENING_AGATHA');
   });
 

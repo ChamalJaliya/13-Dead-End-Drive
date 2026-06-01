@@ -2,7 +2,7 @@
 
 **13 Dead End Drive** supports three distinct ways to play. They share the same board rules, engine, and UI, but differ in **where game state lives**, **who applies moves**, and **how players connect**.
 
-This document is the deep-dive reference for developers and operators. For a quick start, see the root [README.md](../README.md).
+This document is the deep-dive reference for developers and operators. For setup and run instructions, see [docs/DEVELOPER_SETUP.md](../docs/DEVELOPER_SETUP.md). For a one-screen overview, see the root [README.md](../README.md).
 
 ---
 
@@ -33,7 +33,8 @@ This document is the deep-dive reference for developers and operators. For a qui
 | **Authoritative state** | Client `SoloSession` | Shared `LocalRoomStore` + `localStorage` | Nest/Colyseus + Supabase persistence |
 | **Network** | Optional HTTP to bot-ai only | None (same-origin `localStorage` sync) | REST lobby + WebSocket (Colyseus) |
 | **Bots** | Yes (Python service or TS fallback) | No | No (v1); server bot coordinator planned for online bot seats |
-| **Secret cards / masking** | Full state in browser (you only control human seat) | Per-tab `filterStateForPlayer` | Server `broadcastMaskedState` per socket |
+| **Rooting / masking** | Full state in browser (you only control human seat) | Per-tab `filterStateForPlayer` | Server `broadcastMaskedState` per socket |
+| **Rule profile** | Host can set in solo init (defaults STANDARD) | Host `LobbyRulesPanel` → `updateLobbyRules` | Server stores on `GameState` at start (v1: STANDARD online) |
 | **Typical dev command** | `npm run dev` | `npm run dev` | `npm run dev:all` |
 
 ```mermaid
@@ -254,7 +255,7 @@ Only **other** tabs receive `storage` events; the writing tab updates via `emit(
 
 ### Masking
 
-`filterStateForPlayer` strips other players’ hands, rooting cards, and (until reveal) secrets—same rules as server broadcast, applied client-side on each `emit()`.
+`filterStateForPlayer` strips other players’ hands and rooting cards (G01: all your guests are on `characterIds`, visible only to you)—same rules as server broadcast, applied client-side on each `emit()`.
 
 ### Limits
 
@@ -348,6 +349,23 @@ No Supabase Auth JWT yet. Server issues `playerId` at create/join; Colyseus `cli
 
 ---
 
+## Lobby rules (RFC 007)
+
+Before **Start match**, the **host** can open **Advanced rules** (`LobbyRulesPanel.tsx`):
+
+| Setting | Values |
+|---------|--------|
+| `ruleProfile` | `STANDARD` (G01 only) or `ADVANCED` |
+| `enabledModules` | `SECRET_PASSAGES`, `EXTENDED_TRAP_DECK` (only when ADVANCED) |
+
+- **Local:** `useGameStore.setLobbyRuleSettings` → `LocalMultiplayerClient.updateLobbyRules` persists in LOBBY `GameState` → passed to `initializeGame` on start.
+- **Solo:** defaults to `STANDARD`; advanced modules can be wired via store if testing.
+- **Online:** rule profile is stored on server `GameState` at start; lobby UI parity planned with local.
+
+See [board_rules_13_ded.md](./board_rules_13_ded.md) and [rfc/rfc_007_advanced_rule_engine.md](./rfc/rfc_007_advanced_rule_engine.md).
+
+---
+
 ## Lobby UX flow
 
 `LobbyScreen.tsx` is mode-first:
@@ -369,6 +387,7 @@ After host/join success:
 │  Waiting room                       │
 │  ROOM CODE: XXXXXX (copy)           │
 │  Player list (HOST badge)           │
+│  [ Advanced rules ]  (host, local)  │
 │  [ Start match ]  (host only)       │
 │  [ Leave lobby ]                    │
 └─────────────────────────────────────┘
@@ -472,6 +491,7 @@ Solo practice             → Solo
 | Concern | Primary files |
 |---------|----------------|
 | Lobby UI | `src/client/components/LobbyScreen.tsx` |
+| Lobby rules | `src/client/components/LobbyRulesPanel.tsx` |
 | Store / mode switching | `src/client/store/useGameStore.ts` |
 | Play mode type | `src/client/store/applyPlayerAction.ts` |
 | Sessions | `src/client/session/SoloSession.ts`, `LocalSession.ts`, `OnlineSession.ts`, `createGameSession.ts` |
@@ -485,4 +505,4 @@ Solo practice             → Solo
 
 ---
 
-*Last updated: 2026-06-01 — aligns with Phase 5 hybrid transport (client solo/local, server online).*
+*Last updated: 2026-06-01 — Phase 5 transport + RFC 007 lobby rules (local host).*

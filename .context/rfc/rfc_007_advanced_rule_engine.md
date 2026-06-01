@@ -1,6 +1,6 @@
-# RFC 007 — Advanced Rule Engine (Proposal)
+# RFC 007 — Advanced Rule Engine
 
-**Status:** PROPOSED — not implemented  
+**Status:** Phases 1–5 complete — lobby rules UI, `SECRET_PASSAGES`, `EXTENDED_TRAP_DECK`, bot `legalActions` chain  
 **Author:** Product / engine team  
 **Depends on:** RFC 006 (clean architecture), `turnOrchestrator` pipeline  
 **Player guide:** [`docs/HOW_TO_PLAY.md`](../../docs/HOW_TO_PLAY.md)
@@ -36,7 +36,7 @@ Today the engine encodes a **single ruleset** (1993 Milton Bradley, `GRID_21X15`
 
 ---
 
-## Proposed model
+## Implemented model
 
 ### `RuleProfile` on `GameState`
 
@@ -44,10 +44,11 @@ Today the engine encodes a **single ruleset** (1993 Milton Bradley, `GRID_21X15`
 export const RULE_PROFILES = ['STANDARD', 'ADVANCED'] as const;
 export type RuleProfile = (typeof RULE_PROFILES)[number];
 
-// GameState extension (future)
 readonly ruleProfile: RuleProfile;
 readonly enabledModules: readonly RuleModuleId[]; // when ADVANCED
 ```
+
+Implemented in `packages/types/src/rule-profile.ts` and `packages/types/src/game-state.ts`.
 
 - **`STANDARD`** — current engine only; `enabledModules` ignored.  
 - **`ADVANCED`** — `enabledModules` lists toggles (see table below).
@@ -77,9 +78,9 @@ Modules **must not** import each other; orchestrator calls them in registration 
 | `DETECTIVE_MASS_ELIMINATION` | Document + tune detective step 10 behavior | `advanceDetective`, `winCondition` |
 | `PORTRAIT_ON_ANY_DOUBLES` | Already standard — module no-op | — |
 | `EXTENDED_TRAP_DECK` | Alternate GDD mix from `data/gdd_trap_deck.json` | `buildDeck()` variant |
-| `TWO_PLAYER_REVEAL` | Endgame secret reveal | already in `winCondition` |
-
 RFC recommends shipping **SECRET_PASSAGES** first as proof-of-module, everything else stays STANDARD until toggled.
+
+**Product note:** G01 SRS uses **visible rooting only** (no 2p secret guests). Do not add a `TWO_PLAYER_REVEAL` module.
 
 ---
 
@@ -150,19 +151,19 @@ Store `ruleProfile` + `enabledModules` in:
 | Phase | Deliverable |
 |-------|-------------|
 | **0** (done) | [`docs/HOW_TO_PLAY.md`](../../docs/HOW_TO_PLAY.md) + chair/combined rules in STANDARD engine |
-| **1** | `RuleProfile` type on `GameState`, `buildRuleContext`, registry stub (no-op modules) |
-| **2** | Lobby UI + persistence; default `STANDARD` |
-| **3** | First module: `SECRET_PASSAGES` + tests + HOW_TO_PLAY appendix |
-| **4** | Bot `legalActions` delegates to `extendLegalActions` chain |
-| **5** | Additional modules per product priority |
+| **1** | ✅ `RuleProfile` on `GameState`, `buildRuleContext`, registry stub; G01 visible rooting (6/4/3 deal) |
+| **2** | ✅ Lobby `LobbyRulesPanel` + `setLobbyRuleSettings`; local/online lobby persistence on `GameState` |
+| **3** | ✅ `SECRET_PASSAGES` — five grid cells + tests + HOW_TO_PLAY appendix |
+| **4** | ✅ `applyModuleLegalActions` in `enumerateLegalActions` |
+| **5** | ✅ `EXTENDED_TRAP_DECK` — `buildExtendedDeck()` hook |
 
 ---
 
 ## Open questions
 
-1. Should **Solo** allow advanced rules vs bots, or standard-only until bot-ai trained per profile?  
-2. Are secret passages in `data/gdd_board_nodes.json` authoritative for cell pairs?  
-3. Does advanced profile require server authority only (online), or also client-local solo?
+1. Should **Solo** allow advanced rules vs bots by default, or standard-only until bot-ai is profile-aware?  
+2. **Online lobby:** expose `LobbyRulesPanel` on server create/start (parity with local).  
+3. **Custom house rules:** product doc + neutral `RuleModuleId` registration API (post–RFC 007).
 
 ---
 

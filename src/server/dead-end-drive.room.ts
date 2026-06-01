@@ -197,5 +197,8 @@ export function startGameFromLobby(
   playerIds: readonly PlayerId[],
   displayNames: Record<PlayerId, string>,
 ): GameState {
-  return initializeGame(state.gameId, [...playerIds], displayNames);
+  return initializeGame(state.gameId, [...playerIds], displayNames, {
+    ruleProfile:    state.ruleProfile,
+    enabledModules: state.enabledModules,
+  });
 }

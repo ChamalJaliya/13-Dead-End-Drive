@@ -225,14 +225,14 @@ Verification:
 ### Context
 - **Phase:** 4.6–4.9 client UX on top of stable engine
 - **Components:** `HUD3D`, `HandPanel`, `DeckWidget`, `DetectiveWidget`, `Scene3D` compass
-- **Test count:** 82 specs (includes `*.spec.tsx` + `happy-dom`)
+- **Test count:** 160 specs (41 files; includes `*.spec.tsx` + `happy-dom`)
 
 ### Effective patterns
 1. **Single HUD parent** — `HUD3D` mounts all overlays for both 2D and 3D (`App.tsx`).
 2. **Bottom horizontal hand** — trap cards in `HandPanel`; rooting stays in right console.
 3. **Collapsible console** — `isConsoleCollapsed` local state; compass `z-5` so collapse button is clickable.
 4. **Detective = 10 slots** — engine `DETECTIVE_TRACK_MAX_STEPS`; UI dots match `maxSteps`.
-5. **Owner secret visibility** — `filterStateForPlayer` must not strip owner's `secretCharacterIds`.
+5. **G01 rooting visibility** — all dealt guests on `characterIds`; mask opponents' `characterIds` only.
 
 ### Anti-patterns
 - Putting hand cards only in the tall right console (wastes board space).
@@ -254,3 +254,25 @@ Verification:
 2. **No hot-seat solo** — `resolveActingPlayerId` always returns `localPlayerId`; `isHumanTurn` gates UI.
 3. **Wire orchestrator** — end of `syncServerState` when `botPlayerIds.length > 0`.
 4. **TDD legal actions** — one `it()` per sub-phase; round-trip `processTurn` on fixtures.
+
+---
+
+## Milestone 5.x — RFC 007 rule modules
+
+### Context
+- **Types:** `ruleProfile`, `enabledModules` on `GameState` (`packages/types/src/rule-profile.ts`)
+- **Registry:** `packages/engine/src/rules/` — `buildRuleContext`, `registerBuiltinModules`
+- **Modules shipped:** `SECRET_PASSAGES`, `EXTENDED_TRAP_DECK`
+- **Lobby:** `LobbyRulesPanel` + `setLobbyRuleSettings` → `initializeGame` options
+- **Tests:** `ruleContext.spec.ts`, `secretPassagesModule.spec.ts`, `twoPlayerVisibleRooting.spec.ts`, `gddTrapDeckSync.spec.ts`
+
+### Effective patterns
+1. **STANDARD = G01** — no `secretCharacterIds` deal; visible rooting counts by player count.
+2. **Module hooks** — board at init (`applyBoardModules`), legal actions (`applyModuleLegalActions`), not scattered `if` in `moveCharacter`.
+3. **Passage hops** — skip orthogonal adjacency check for passage-to-passage teleports only.
+4. **GDD JSON** — update `data/gdd_*.json` when `buildDeck()` or obstacle catalog changes; add sync spec.
+
+### Anti-patterns
+- Re-introducing 2p secret rooting or endgame full secret reveal.
+- Shipping portrait change / secret passage as trap deck cards (doubles + module only).
+- Documenting 82 tests after 2026-06-01 suite growth.

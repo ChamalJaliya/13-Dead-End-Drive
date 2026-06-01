@@ -3,7 +3,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Protocol : Read this file BEFORE beginning any implementation phase.
 #            Update this file IMMEDIATELY upon completing any phase gate.
-# Last sync: 2026-06-01 — RFC 006 clean architecture (packages, GameSession, useUiStore)
+# Last sync: 2026-06-01 — G01 rules, RFC 007 (phases 1–5), GDD JSON sync, 160 tests
 # ═══════════════════════════════════════════════════════════════════════════════
 
 ---
@@ -17,7 +17,7 @@
 **Phase 4 — Client UI** (feature-complete for solo/local/online lobby)
 > Hybrid: solo/local client engine; online server-authoritative via Colyseus.
 
-**Next:** Supabase Auth JWT (`AUTH_REQUIRED=true`) + production deploy. **Docs:** [`docs/HOW_TO_PLAY.md`](../docs/HOW_TO_PLAY.md). **Proposed:** RFC 007 advanced rule engine (not implemented).
+**Next:** Supabase Auth JWT (`AUTH_REQUIRED=true`) + production deploy. **Docs:** [`docs/HOW_TO_PLAY.md`](../docs/HOW_TO_PLAY.md), [`docs/requirements/G01_digital_multiplayer_srs.md`](../docs/requirements/G01_digital_multiplayer_srs.md). **RFC 007:** ✅ Phases 1–5 (rule profile, lobby UI, secret passages, extended deck, bot legalActions chain).
 
 
 **Architecture (RFC 006):** `@ded/*` packages, `GameSession` + `dispatchGameEvent`, `useUiStore` / `useGameStore` split, dependency-cruiser CI.
@@ -44,6 +44,7 @@
 | 2.3 | Card Play Validation — playCard() | ✅ Complete |
 | 2.4 | Win Condition — winCondition() | ✅ Complete |
 | 2.5 | Turn Orchestrator — turnOrchestrator() | ✅ Complete |
+| 2.6 | RFC 007 — rule profile + optional modules | ✅ Complete |
 
 ### Phase 3 — WebSocket Transport Layer
 
@@ -91,14 +92,20 @@
 | `boardDefinition.ts` | `GRID_21X15_*`, `INITIAL_DETECTIVE_TRACK` | ✅ Stable |
 | `portraitStack.ts` | Portrait rotation (incl. `AUNT_AGATHA`) | ✅ Stable |
 | `rootingReveal.ts` | `exposeRootingForEliminated` | ✅ Stable |
-| `characterOwnership.ts` | Owner resolution, 2p secrets | ✅ Stable |
+| `characterOwnership.ts` | Owner resolution (G01 visible rooting) | ✅ Stable |
 | `cardDeck.ts` | `buildDeck` (29 cards) | ✅ Stable |
 | `movementPlan.ts` | Split vs combined dice | ✅ Stable |
+| `chairPhase.ts` | Opening chair phase guards | ✅ Stable |
+| `rules/registry.ts` | `buildRuleContext`, module hooks (RFC 007) | ✅ Stable |
+| `rules/applyBoardModules.ts` | Secret passages on board at init | ✅ Stable |
+| `rules/registerBuiltinModules.ts` | `SECRET_PASSAGES`, `EXTENDED_TRAP_DECK` | ✅ Stable |
 
 ### Client (`src/client/`)
 
 | File | Purpose | Status |
 |------|---------|--------|
+| `components/LobbyScreen.tsx` | Mode-first lobby + waiting room | ✅ Stable |
+| `components/LobbyRulesPanel.tsx` | STANDARD / ADVANCED rule toggles | ✅ Stable |
 | `components/HUD3D.tsx` | Master gameplay HUD | ✅ Stable |
 | `components/HandPanel.tsx` | Bottom hand overlay | ✅ Stable |
 | `components/DeckWidget.tsx` | Deck/discard counts | ✅ Stable |
@@ -154,10 +161,11 @@
 | Doubles | Optional portrait only — **no** auto trap draw |
 | Pawn control | Any active player moves any alive pawn |
 | Movement | Split or combined; `CHOOSE_MOVEMENT_PLAN` |
-| Secret cards | Owner sees own; others masked until death reveal / game over |
+| Rooting cards | G01: all on `characterIds` (2p = 6 each); opponents masked |
 | Exit | `K1` |
-| Secret passages | **Excluded** from this release |
-| State sync | Mask opponents’ hands/rooting; owner keeps secrets |
+| Secret passages | **STANDARD:** off; **ADVANCED** + `SECRET_PASSAGES`: 5 cells |
+| Rule profile | `STANDARD` default; `ADVANCED` + `enabledModules` in lobby |
+| State sync | Mask opponents’ hands/rooting |
 
 ### Explicitly excluded (1313 sequel)
 
@@ -171,11 +179,11 @@
 
 ## Test Suite Scoreboard
 
-**Last run:** `npx vitest run --reporter=verbose` → **82/82 GREEN** (21 files)
+**Last run:** `npx vitest run --reporter=verbose` → **160/160 GREEN** (41 files)
 
 | Area | Spec files (representative) |
 |------|----------------------------|
-| Engine | `moveCharacter`, `trapEvaluator`, `winCondition`, `turnOrchestrator`, `movementRulesGrid`, `gameInitializer`, `diceMovementPlan`, `twoPlayerSecretCard`, `cardDeck` |
+| Engine | `moveCharacter`, `trapEvaluator`, `winCondition`, `turnOrchestrator`, `movementRulesGrid`, `gameInitializer`, `twoPlayerVisibleRooting`, `secretPassagesModule`, `ruleContext`, `gddTrapDeckSync`, `gridObstacleCatalog`, `cardDeck` |
 | Network | `broadcastPipeline`, `broadcastPipeline.secret`, `sessionManager`, `routePlayerEvent` |
 | Client | `GameBoard`, `HandPanel`, `DeckWidget`, `DetectiveWidget`, `HUD3DConsole`, `actionDispatcher`, `kinematicsEngine` |
 | Fixtures | `threePlayerSandbox` |
@@ -197,9 +205,12 @@
 | Split/combined movement | ✅ |
 | Opening chair phase | ✅ |
 | HUD hand/deck/detective widgets | ✅ |
-| Secret passages on grid | 🔲 Excluded |
+| Secret passages on grid | ✅ ADVANCED module |
+| Furniture obstacle catalog in GDD | ✅ `gdd_board_nodes.json` |
+| Trap deck GDD sync | ✅ `gdd_trap_deck.json` |
 | Trap draw board squares | 🔲 Excluded |
-| GDD hand cards (Portrait Change / SP as cards) | 🔲 Future |
+| Portrait / SP as deck cards | 🔲 Not in product (doubles / board module) |
+| Custom house-rule pack | 🔲 Awaiting product rules doc |
 
 **Sandbox:** `makeThreePlayerSandbox()` in `src/__tests__/fixtures/threePlayerSandbox.fixtures.ts`
 

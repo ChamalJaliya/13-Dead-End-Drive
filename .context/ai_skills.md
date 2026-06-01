@@ -27,13 +27,13 @@ Activate this role when the task involves:
 
 ### Pre-Task Protocol (mandatory before first line of code)
 1. Read `/.context/system_state.md`       → identify current phase and module registry
-2. Read `src/engine/engine-rules.mdc`     → load engine constraints and cascade rules
+2. Read `packages/engine/` + `.context/board_rules_13_ded.md` → engine constraints
 3. Read the spec file for the target function → understand exactly what must go green
 4. Confirm the target module boundary      → what this function MAY and MAY NOT do
 
 ### Operating Constraints
 - MUST NOT write implementation before the spec exists and is confirmed red
-- MUST NOT import from outside `src/engine/` except from `src/types/`
+- MUST NOT import from outside `packages/engine/` except from `packages/types/` (re-exports under `src/engine/` remain for legacy paths)
 - MUST NOT add async/await — all engine functions are synchronous
 - MUST NOT write more than one engine module per prompt session
 - MUST use `EngineError` for all thrown errors — never raw `new Error(...)`

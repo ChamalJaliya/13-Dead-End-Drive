@@ -79,8 +79,8 @@ export interface DetectiveTrack {
 export interface FireplacePortrait {
   /** May be `AUNT_AGATHA` at game start; becomes a guest after first doubles rotation. */
   readonly currentHeirId:      PortraitHeirId;
-  /** Shuffled portrait stack; index 0 is the card showing in the frame. */
-  readonly portraitStack:      readonly CharacterId[];
+  /** Shuffled 13-card stack (12 guests + Aunt Agatha); index 0 is next to reveal. */
+  readonly portraitStack:      readonly PortraitHeirId[];
   readonly portraitHistory:    PortraitHeirId[];    // previously shown heirs
   readonly lastChangedOnTurn:  number;
   readonly lastChangedReason:  PortraitChangeReason;

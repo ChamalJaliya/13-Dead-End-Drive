@@ -13,7 +13,7 @@ This table stores the complete serialized GameState JSON tree alongside its acti
 | `id` | `UUID` | `PRIMARY KEY, DEFAULT gen_random_uuid()` | Unique room session identifier. |
 | `room_code` | `VARCHAR(6)` | `UNIQUE, NOT NULL` | Short human-readable lobby code. |
 | `status` | `VARCHAR` | `NOT NULL` | `LOBBY_WAITING`, `ACTIVE`, `GAME_OVER`. |
-| `game_state` | `JSONB` | `NOT NULL` | Full `GameState` tree (incl. `boardVersion`, `exposedRooting`, `detectivePosition.maxSteps: 10`, `PortraitHeirId`). |
+| `game_state` | `JSONB` | `NOT NULL` | Full `GameState` tree (incl. `boardVersion`, `exposedRooting`, `detectivePosition.maxSteps: 10`, `PortraitHeirId`, `ruleProfile`, `enabledModules`). |
 | `updated_at` | `TIMESTAMP`| `DEFAULT now()` | Tracks active session deltas. |
 
 ```sql

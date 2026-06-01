@@ -5,6 +5,7 @@
 #   v1.1  Phase 1.4 — Reconciled server-side trap triggers to position-only
 #   v1.2  Phase 2.2 — Added turn-advance and detective track integration
 #   v1.3  2026-05-27 — GRID_21X15, trap pending flow, 10-step detective, React HUD overlays
+#   v1.4  2026-06-01 — `@ded/*` packages, `ruleProfile` / modules via `buildRuleContext`
 # ─────────────────────────────────────────────────────────────────────────────
 
 ---

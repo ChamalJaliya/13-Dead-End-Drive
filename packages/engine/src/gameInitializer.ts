@@ -7,6 +7,11 @@
 import type { GameState, PlayerState }   from '@ded/types/game-state.js';
 import type { Character }                from '@ded/types/entities.js';
 import { CHARACTER_IDS, type CharacterId, type PlayerId } from '@ded/types/enums.js';
+import type { RuleModuleId, RuleProfile } from '@ded/types/rule-profile.js';
+import {
+  DEFAULT_ENABLED_MODULES,
+  DEFAULT_RULE_PROFILE,
+} from '@ded/types/rule-profile.js';
 
 import {
   INITIAL_DETECTIVE_TRACK,
@@ -15,7 +20,9 @@ import {
   GRID_21X15_INITIAL_BOARD,
 } from './boardDefinition.js';
 import { buildTraps }                                               from './trapDefinition.js';
-import { buildDeck }                                                from './cardDeck.js';
+import { buildDeck, buildExtendedDeck }                             from './cardDeck.js';
+import { applyBoardModulesForState }                                from './rules/applyBoardModules.js';
+import { registerBuiltinRuleModules }                               from './rules/registerBuiltinModules.js';
 import { buildPortraitStack }                                       from './portraitStack.js';
 import { CHARACTER_DATA }                                           from './characterCatalog.js';
 export { CHARACTER_DATA, AUNT_AGATHA_DISPLAY_NAME, getCharacterDisplayName } from './characterCatalog.js';
@@ -33,7 +40,17 @@ function shuffleArray<T>(arr: T[]): T[] {
 
 interface CharacterDealResult {
   readonly visible: Record<PlayerId, CharacterId[]>;
-  readonly secret: Record<PlayerId, CharacterId[]>;
+}
+
+export interface InitializeGameOptions {
+  readonly ruleProfile?: RuleProfile;
+  readonly enabledModules?: readonly RuleModuleId[];
+}
+
+function rootingCardsPerPlayer(playerCount: number): number {
+  if (playerCount === 2) return 6;
+  if (playerCount === 3) return 4;
+  return 3;
 }
 
 function dealCharacterCards(
@@ -42,24 +59,12 @@ function dealCharacterCards(
 ): CharacterDealResult {
   const shuffled = shuffleArray(ALL_CHARACTER_IDS);
   const visible: Record<PlayerId, CharacterId[]> = {};
-  const secret: Record<PlayerId, CharacterId[]> = {};
-
-  if (playerIds.length === 2) {
-    // PDF 2p: 4 face-up + 2 secret each — all 12 pawns in play
-    const [p0, p1] = playerIds as [PlayerId, PlayerId];
-    visible[p0] = shuffled.slice(0, 4);
-    visible[p1] = shuffled.slice(4, 8);
-    secret[p0] = shuffled.slice(8, 10);
-    secret[p1] = shuffled.slice(10, 12);
-    return { visible, secret };
-  }
 
   playerIds.forEach((pid, i) => {
     visible[pid] = shuffled.slice(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
-    secret[pid] = [];
   });
 
-  return { visible, secret };
+  return { visible };
 }
 
 /** True when pawns or board still use pre–dining-ring chair cells. */
@@ -123,13 +128,22 @@ export function initializeGame(
   gameId: string,
   playerIds: readonly PlayerId[],
   playerNames: Record<PlayerId, string>,
+  options: InitializeGameOptions = {},
 ): GameState {
+  registerBuiltinRuleModules();
+
   if (playerIds.length < 2 || playerIds.length > 4) {
     throw new Error('13 Dead End Drive requires 2–4 players.');
   }
 
-  const cardsPerPlayer = playerIds.length <= 3 ? 4 : 3;
-  const { visible: characterDeals, secret: secretDeals } = dealCharacterCards(
+  const ruleProfile = options.ruleProfile ?? DEFAULT_RULE_PROFILE;
+  const enabledModules =
+    ruleProfile === 'STANDARD'
+      ? DEFAULT_ENABLED_MODULES
+      : (options.enabledModules ?? DEFAULT_ENABLED_MODULES);
+
+  const cardsPerPlayer = rootingCardsPerPlayer(playerIds.length);
+  const { visible: characterDeals } = dealCharacterCards(
     playerIds,
     cardsPerPlayer,
   );
@@ -147,11 +161,7 @@ export function initializeGame(
     const controlledBy: PlayerId | null =
       Object.entries(characterDeals).find(([, cards]) =>
         cards.includes(charId),
-      )?.[0]
-      ?? Object.entries(secretDeals).find(([, cards]) =>
-        cards.includes(charId),
-      )?.[0]
-      ?? null;
+      )?.[0] ?? null;
 
     characters[charId] = {
       id:               charId,
@@ -174,14 +184,13 @@ export function initializeGame(
 
   const players: Record<PlayerId, PlayerState> = {};
   playerIds.forEach((pid, idx) => {
-    const secretIds = secretDeals[pid] ?? [];
     players[pid] = {
       playerId:     pid,
       displayName:  playerNames[pid] ?? `Player ${idx + 1}`,
       avatarUrl:    null,
       characterIds: characterDeals[pid] ?? [],
-      secretCharacterIds:    secretIds,
-      hasHiddenSecretCard:  secretIds.length > 0,
+      secretCharacterIds:    [],
+      hasHiddenSecretCard:  false,
       hand:         [],
       isEliminated: false,
       isConnected:  true,
@@ -190,9 +199,12 @@ export function initializeGame(
   });
 
   const now = new Date().toISOString();
+  const useExtendedDeck = enabledModules.includes('EXTENDED_TRAP_DECK');
 
-  return {
+  let gameState: GameState = {
     gameId,
+    ruleProfile,
+    enabledModules,
     boardVersion:      'GRID_21X15',
     phase:             'IN_PROGRESS',
     subPhase:          'AWAITING_ROLL',
@@ -219,7 +231,7 @@ export function initializeGame(
     pendingTrapCell:   null,
     pendingTrapHandCardIds: null,
     pendingTrapDrawnCardId: null,
-    deck:              buildDeck(),
+    deck:              useExtendedDeck ? buildExtendedDeck() : buildDeck(),
     discardPile:       [],
     winner:               null,
     winCondition:         null,
@@ -228,4 +240,7 @@ export function initializeGame(
     createdAt:         now,
     updatedAt:         now,
   };
+
+  gameState = applyBoardModulesForState(gameState);
+  return gameState;
 }

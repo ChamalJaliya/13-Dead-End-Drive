@@ -18,7 +18,12 @@ import type {
   PlayerId,
   TrapId,
   MovementDie,
+  PortraitHeirId,
 } from '../../types/enums.js';
+import {
+  DEFAULT_ENABLED_MODULES,
+  DEFAULT_RULE_PROFILE,
+} from '@ded/types/rule-profile.js';
 import { CHARACTER_IDS } from '../../types/enums.js';
 import { INITIAL_BOARD, INITIAL_DETECTIVE_TRACK, RED_CHAIR_CELLS } from '../../engine/boardDefinition.js';
 import { INITIAL_TRAPS } from '../../engine/trapDefinition.js';
@@ -119,8 +124,8 @@ export function makeDetective(overrides?: Partial<DetectiveTrack>): DetectiveTra
 
 // ─── Portrait ─────────────────────────────────────────────────────────────────
 
-export function makePortrait(heirId: CharacterId): FireplacePortrait {
-  const stack = [heirId, ...CHARACTER_IDS.filter((id) => id !== heirId)];
+export function makePortrait(heirId: PortraitHeirId): FireplacePortrait {
+  const stack: PortraitHeirId[] = [heirId, ...CHARACTER_IDS.filter((id) => id !== heirId), 'AUNT_AGATHA'];
   return {
     currentHeirId:     heirId,
     portraitStack:     stack,
@@ -236,6 +241,8 @@ export function makeAllCharacters(): Record<CharacterId, Character> {
 export function makeGameState(overrides?: Partial<GameState>): GameState {
   const base: GameState = {
     gameId:            GAME_ID,
+    ruleProfile:       DEFAULT_RULE_PROFILE,
+    enabledModules:    DEFAULT_ENABLED_MODULES,
     boardVersion:      'FIXTURE',
     phase:             'IN_PROGRESS',
     subPhase:          'AWAITING_ROLL',

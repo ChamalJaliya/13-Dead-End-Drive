@@ -12,6 +12,8 @@ import {
   getReachableCells,
   type MovementPreviewContext,
 } from './pathfinding.js';
+import { applyModuleLegalActions } from '@ded/engine/rules/registry.js';
+import { registerBuiltinRuleModules } from '@ded/engine/rules/registerBuiltinModules.js';
 
 function makeOptionId(kind: string, payload: unknown): string {
   return `${kind}:${JSON.stringify(payload)}`;
@@ -269,5 +271,6 @@ export function enumerateLegalActions(
   actions.push(...enumerateMovePawns(state, playerId, gameId));
   actions.push(...enumerateTrapActions(state, playerId, gameId));
 
-  return actions;
+  registerBuiltinRuleModules();
+  return [...applyModuleLegalActions(state, playerId, actions)];
 }

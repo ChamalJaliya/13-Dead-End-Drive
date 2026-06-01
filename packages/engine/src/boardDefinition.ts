@@ -406,7 +406,13 @@ export function gridCellCoords(cellId: CellId): { col: number; row: number } | n
   return coordToIndex(cellId);
 }
 
-export const GRID_21X15_SECRET_PASSAGES: readonly CellId[] = [];
+/** Five teleport nodes when `SECRET_PASSAGES` module is enabled (RFC 007). */
+export const GRID_21X15_SECRET_PASSAGE_CELLS: readonly CellId[] = [
+  'A15', 'U15', 'E10', 'Q10', 'K14',
+] as const;
+
+/** @deprecated Use GRID_21X15_SECRET_PASSAGE_CELLS */
+export const GRID_21X15_SECRET_PASSAGES: readonly CellId[] = GRID_21X15_SECRET_PASSAGE_CELLS;
 
 const gridCells: GridCell[] = [];
 
@@ -531,6 +537,39 @@ export const GRID_21X15_BOARD_CELLS: GridCell[] = gridCells;
 export const GRID_21X15_INITIAL_BOARD: Record<CellId, GridCell> = Object.fromEntries(
   gridCells.map((c) => [c.cellId, c]),
 );
+
+/** Furniture / décor cells that block adjacency (pawns cannot enter or pass through). */
+const GRID_21X15_OBSTACLE_CELL_TYPES = new Set<GridCell['cellType']>([
+  'TABLE',
+  'STATUE',
+  'FIREPLACE',
+  'BOOKSHELF',
+  'STAIRCASE',
+  'COUCH',
+  'VASE',
+  'WRITING_TABLE',
+  'PAINTING',
+  'PIANO',
+]);
+
+function buildGridObstacleCatalog(
+  board: Readonly<Record<CellId, GridCell>>,
+): Readonly<Record<string, readonly CellId[]>> {
+  const catalog: Record<string, CellId[]> = {};
+  for (const cell of Object.values(board)) {
+    if (!GRID_21X15_OBSTACLE_CELL_TYPES.has(cell.cellType)) continue;
+    const key = cell.cellType;
+    (catalog[key] ??= []).push(cell.cellId);
+  }
+  for (const ids of Object.values(catalog)) {
+    ids.sort();
+  }
+  return catalog;
+}
+
+/** Movement-blocking furniture on GRID_21X15 (sync with `data/gdd_board_nodes.json`). */
+export const GRID_21X15_OBSTACLE_CATALOG: Readonly<Record<string, readonly CellId[]>> =
+  buildGridObstacleCatalog(GRID_21X15_INITIAL_BOARD);
 
 export const GRID_21X15_CELL_COORDINATES: Record<CellId, { x: number; y: number }> = Object.fromEntries(
   gridCells.map((c) => [c.cellId, { x: c.gridCol, y: c.gridRow }]),

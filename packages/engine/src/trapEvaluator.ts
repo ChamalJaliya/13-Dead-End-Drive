@@ -23,6 +23,7 @@ import { EngineError }                          from './EngineError.js';
 import { cardMatchesTrap, drawCard, shuffleDeck } from './cardDeck.js';
 import { advanceDetective }                     from './detectiveTrack.js';
 import { exposeRootingForEliminated }           from './rootingReveal.js';
+import { applyPortraitAfterHeirEliminated }     from './portraitStack.js';
 
 // =============================================================================
 // Public API — Action Resolvers
@@ -334,7 +335,12 @@ export function fireTrap(state: GameState, trapId: TrapId, timestamp: string): G
     eliminatedIds.includes(state.activePortrait.currentHeirId);
 
   if (heirWasEliminated) {
-    updatedPortrait = rotatePortrait(state, updatedCharacters, state.activePortrait.currentHeirId);
+    updatedPortrait = applyPortraitAfterHeirEliminated(
+      state.activePortrait,
+      updatedCharacters,
+      state.activePortrait.currentHeirId,
+      state.turnNumber,
+    );
     // Apply isPortraitHeir flag to new heir
     const newHeirId = updatedPortrait.currentHeirId;
     if (newHeirId !== 'AUNT_AGATHA') {
@@ -364,41 +370,6 @@ export function fireTrap(state: GameState, trapId: TrapId, timestamp: string): G
   nextState = exposeRootingForEliminated(nextState, eliminatedIds);
 
   return nextState;
-}
-
-function rotatePortrait(
-  state: GameState,
-  characters: Record<CharacterId, Character>,
-  eliminatedHeirId: CharacterId,
-): FireplacePortrait {
-  // Pick the first ALIVE character that isn't the eliminated heir
-  let nextHeirId: CharacterId | undefined;
-  for (const charId of CHARACTER_IDS) {
-    if (charId === eliminatedHeirId) continue;
-    const char = characters[charId];
-    if (char && char.status === 'ALIVE') {
-      nextHeirId = charId;
-      break;
-    }
-  }
-
-  const resolvedHeirId = nextHeirId ?? eliminatedHeirId;
-
-  const remainingStack = state.activePortrait.portraitStack.filter(
-    (id) => id !== eliminatedHeirId,
-  );
-  const stackWithHeir =
-    remainingStack.length > 0
-      ? remainingStack
-      : [...state.activePortrait.portraitStack];
-
-  return {
-    currentHeirId: resolvedHeirId,
-    portraitStack: stackWithHeir,
-    portraitHistory: [...state.activePortrait.portraitHistory, eliminatedHeirId],
-    lastChangedOnTurn: state.turnNumber,
-    lastChangedReason: 'HEIR_ELIMINATED',
-  };
 }
 
 function computePlayerElimination(

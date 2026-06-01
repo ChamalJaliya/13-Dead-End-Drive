@@ -156,6 +156,8 @@ export function makeThreePlayerSandbox(
 
   return {
     gameId:            SANDBOX_GAME_ID,
+    ruleProfile:       'STANDARD',
+    enabledModules:    [],
     boardVersion:      'FIXTURE',
     phase:             'IN_PROGRESS',
     subPhase:          options.subPhase ?? 'AWAITING_ROLL',

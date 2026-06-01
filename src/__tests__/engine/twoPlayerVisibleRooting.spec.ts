@@ -1,4 +1,4 @@
-// twoPlayerSecretCard.spec.ts — 2-player hidden secret character cards (PDF rules)
+// twoPlayerVisibleRooting.spec.ts — G01: all rooting guests visible (no secret deal)
 
 import { describe, it, expect } from 'vitest';
 import { initializeGame } from '../../engine/gameInitializer.js';
@@ -10,26 +10,23 @@ import {
   makeCell,
   makePortrait,
   makePlayer,
-  makeDetective,
   PLAYER_A_ID,
   PLAYER_B_ID,
 } from '../fixtures/gameState.fixtures.js';
 import { CHARACTER_IDS } from '../../types/enums.js';
 
-describe('two-player secret character card', () => {
-  it('deals two hidden secret cards per player and roots all twelve pawns', () => {
-    const state = initializeGame('2p-secret', ['p1', 'p2'], { p1: 'A', p2: 'B' });
+describe('two-player visible rooting (G01)', () => {
+  it('deals six visible rooting guests per player and roots all twelve pawns', () => {
+    const state = initializeGame('2p-visible', ['p1', 'p2'], { p1: 'A', p2: 'B' });
     expect(state.turnOrder).toHaveLength(2);
-    expect(state.players['p1']!.secretCharacterIds).toHaveLength(2);
-    expect(state.players['p2']!.secretCharacterIds).toHaveLength(2);
-    expect(state.players['p1']!.characterIds).toHaveLength(4);
-    expect(state.players['p2']!.characterIds).toHaveLength(4);
+    expect(state.players['p1']!.characterIds).toHaveLength(6);
+    expect(state.players['p2']!.characterIds).toHaveLength(6);
+    expect(state.players['p1']!.secretCharacterIds).toHaveLength(0);
+    expect(state.players['p2']!.hasHiddenSecretCard).toBe(false);
 
     const allRooted = new Set([
       ...state.players['p1']!.characterIds,
       ...state.players['p2']!.characterIds,
-      ...state.players['p1']!.secretCharacterIds,
-      ...state.players['p2']!.secretCharacterIds,
     ]);
     expect(allRooted.size).toBe(12);
 
@@ -40,17 +37,18 @@ describe('two-player secret character card', () => {
 
   it('does not assign secret cards in a three-player game', () => {
     const state = initializeGame('3p', ['p1', 'p2', 'p3'], { p1: 'A', p2: 'B', p3: 'C' });
-    expect(state.players['p1']!.secretCharacterIds).toHaveLength(0);
-    expect(state.players['p2']!.secretCharacterIds).toHaveLength(0);
-    expect(state.players['p3']!.secretCharacterIds).toHaveLength(0);
+    for (const pid of ['p1', 'p2', 'p3'] as const) {
+      expect(state.players[pid]!.secretCharacterIds).toHaveLength(0);
+      expect(state.players[pid]!.characterIds).toHaveLength(4);
+    }
   });
 
-  it('awards HEIR_ESCAPED to the secret card holder when only they root for the portrait guest', () => {
+  it('awards HEIR_ESCAPED to the rooting card holder for the portrait guest', () => {
     const state = makeGameState({
       turnOrder: [PLAYER_A_ID, PLAYER_B_ID],
       players: {
-        [PLAYER_A_ID]: makePlayer(PLAYER_A_ID, ['SMOTHERS'], [], ['CHARITY']),
-        [PLAYER_B_ID]: makePlayer(PLAYER_B_ID, ['DUSTY'], [], []),
+        [PLAYER_A_ID]: makePlayer(PLAYER_A_ID, ['SMOTHERS', 'CHARITY']),
+        [PLAYER_B_ID]: makePlayer(PLAYER_B_ID, ['DUSTY']),
       },
       characters: {
         ...makeGameState().characters,
@@ -58,7 +56,7 @@ describe('two-player secret character card', () => {
           id:             'CHARITY',
           position:       'EXIT_DOOR',
           status:         'ALIVE',
-          controlledBy:   null,
+          controlledBy:   PLAYER_A_ID,
           isPortraitHeir: true,
         }),
       },
@@ -75,18 +73,18 @@ describe('two-player secret character card', () => {
     expect(resolution.winner).toBe(PLAYER_A_ID);
   });
 
-  it('counts a living secret guest for LAST_ALIVE', () => {
+  it('counts a living rooted guest for LAST_ALIVE', () => {
     const state = makeGameState({
       turnOrder: [PLAYER_A_ID, PLAYER_B_ID],
       players: {
-        [PLAYER_A_ID]: makePlayer(PLAYER_A_ID, ['SMOTHERS'], [], ['CHARITY']),
-        [PLAYER_B_ID]: makePlayer(PLAYER_B_ID, ['DUSTY'], [], []),
+        [PLAYER_A_ID]: makePlayer(PLAYER_A_ID, ['SMOTHERS', 'CHARITY']),
+        [PLAYER_B_ID]: makePlayer(PLAYER_B_ID, ['DUSTY']),
       },
       characters: {
         ...makeGameState().characters,
         SMOTHERS: makeCharacter({ id: 'SMOTHERS', status: 'ELIMINATED', controlledBy: PLAYER_A_ID }),
         DUSTY: makeCharacter({ id: 'DUSTY', status: 'ELIMINATED', controlledBy: PLAYER_B_ID }),
-        CHARITY: makeCharacter({ id: 'CHARITY', status: 'ALIVE', controlledBy: null }),
+        CHARITY: makeCharacter({ id: 'CHARITY', status: 'ALIVE', controlledBy: PLAYER_A_ID }),
       },
     });
 
@@ -98,13 +96,13 @@ describe('two-player secret character card', () => {
     expect(resolution.winner).toBe(PLAYER_A_ID);
   });
 
-  it('reveals secret cards on game over in two-player games', () => {
+  it('does not force secretCardsRevealed on game over', () => {
     const state = makeGameState({
       turnOrder: [PLAYER_A_ID, PLAYER_B_ID],
       secretCardsRevealed: false,
       players: {
-        [PLAYER_A_ID]: makePlayer(PLAYER_A_ID, ['SMOTHERS'], [], ['CHARITY']),
-        [PLAYER_B_ID]: makePlayer(PLAYER_B_ID, ['DUSTY'], [], ['PARKER']),
+        [PLAYER_A_ID]: makePlayer(PLAYER_A_ID, ['CHARITY']),
+        [PLAYER_B_ID]: makePlayer(PLAYER_B_ID, ['DUSTY']),
       },
       characters: {
         ...makeGameState().characters,
@@ -112,7 +110,7 @@ describe('two-player secret character card', () => {
           id:           'CHARITY',
           position:     'EXIT_DOOR',
           status:       'ALIVE',
-          controlledBy: null,
+          controlledBy: PLAYER_A_ID,
           isPortraitHeir: true,
         }),
       },
@@ -124,6 +122,6 @@ describe('two-player secret character card', () => {
 
     const ended = evaluateWinCondition(state);
     expect(ended.phase).toBe('GAME_OVER');
-    expect(ended.secretCardsRevealed).toBe(true);
+    expect(ended.secretCardsRevealed).toBe(false);
   });
 });

@@ -2,14 +2,15 @@
   "board_dimensions": { "columns": 21, "rows": 15 },
   "active_squares_total": 315,
   "cell_id_format": "algebraic A1–U15 (column letter + row number, row 1 at bottom)",
-  "implementation_status": "Implemented in src/engine/boardDefinition.ts as GRID_21X15",
+  "implementation_status": "Implemented in packages/engine/src/boardDefinition.ts as GRID_21X15",
   "board_version": "GRID_21X15",
   "detective_track_steps": 10,
   "detective_note": "Slot 10 = at front door (K1). Engine: DETECTIVE_TRACK_MAX_STEPS = 10",
   "special_cells": {
     "start_chairs": ["J5", "J6", "J7", "J8", "J9", "K5", "K9", "L5", "L6", "L7", "L8", "L9"],
     "exit_doorway": "K1",
-    "secret_passage_spaces": [],
+    "secret_passage_spaces": ["A15", "U15", "E10", "Q10", "K14"],
+    "secret_passage_note": "K14 is FIREPLACE décor in standard play; becomes a passage only when ADVANCED + SECRET_PASSAGES is enabled",
     "trap_card_draw_spaces": [],
     "note_trap_draw": "Trap cards are drawn only when landing on skull TRAP_ZONE cells, not from board draw squares"
   },
@@ -21,7 +22,18 @@
     "STAIRS": { "trigger_square": "B15" }
   },
   "obstacles": {
+    "movement_rule": "Pawns cannot enter or move through these cells (adjacency is blocked). Other pawns also block paths.",
+    "source_of_truth": "GRID_21X15_OBSTACLE_CATALOG in boardDefinition.ts",
     "dining_table": ["K6", "K7", "K8"],
-    "note": "Full mansion layout (rooms, corridors, décor) is generated programmatically in buildGrid21x15Board()"
+    "statue": ["A2", "A3", "B2", "B3"],
+    "fireplace_deco": ["H13", "H14", "H15", "I13", "I14", "I15", "J13", "J14", "J15", "K13", "K14", "K15", "L13", "L14", "L15", "M13", "M14", "M15", "N13", "N14", "N15"],
+    "bookshelf": ["U3", "U4", "U5", "U6"],
+    "staircase": ["C14", "C15", "D14", "D15", "E14", "E15", "F14", "F15", "G14", "G15"],
+    "couch": ["O5", "O6", "P6", "T9", "T10", "T11", "T12", "T13", "U9", "U10", "U11", "U12", "U13"],
+    "vase": ["E1"],
+    "writing_table": ["Q1", "R1", "S1"],
+    "painting_easel": ["F6", "G5", "G6"],
+    "piano": ["C9", "C10", "C11", "D9", "D10", "D11", "E9", "E10", "E11"],
+    "total_obstacle_cells": 71
   }
 }

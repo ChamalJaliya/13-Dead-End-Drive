@@ -56,6 +56,8 @@ export class SessionManager {
 
     const state: GameState = {
       gameId:         roomId,
+      ruleProfile:    'STANDARD',
+      enabledModules: [],
       boardVersion:   'GRID_21X15',
       phase:          'LOBBY',
       turnNumber:     1,

@@ -46,6 +46,8 @@ export class RoomPersistenceService {
     const roomId = crypto.randomUUID();
     return {
       gameId:         roomId,
+      ruleProfile:    'STANDARD',
+      enabledModules: [],
       boardVersion:   'GRID_21X15',
       phase:          'LOBBY',
       turnNumber:     1,

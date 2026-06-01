@@ -348,6 +348,10 @@ function validateOrthogonalSteps(
     const to   = state.board[path[i + 1]!];
     if (!from || !to) continue;
 
+    if (from.isSecretPassage && to.isSecretPassage) {
+      continue;
+    }
+
     const colDelta = Math.abs(from.gridCol - to.gridCol);
     const rowDelta = Math.abs(from.gridRow - to.gridRow);
     if (colDelta + rowDelta !== 1) {

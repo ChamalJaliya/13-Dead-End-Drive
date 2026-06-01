@@ -100,6 +100,14 @@ export function buildDeck(): ActionCard[] {
   return shuffleDeck(cards);
 }
 
+/** Extended deck variant (RFC 007 `EXTENDED_TRAP_DECK`); composition matches standard until GDD mix ships. */
+export function buildExtendedDeck(): ActionCard[] {
+  return buildDeck().map((card, i) => ({
+    ...card,
+    cardId: `ext-${card.cardId}-${i}`,
+  }));
+}
+
 export function drawCard(
   deck: ActionCard[],
 ): { card: ActionCard; remainingDeck: ActionCard[] } | null {

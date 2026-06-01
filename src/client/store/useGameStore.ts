@@ -32,6 +32,7 @@ import type { ClientFxEvent }     from '../fx/clientFxTypes.js';
 import { detectClientFxEvents } from '../fx/detectClientFxEvents.js';
 import { isTrapFiredEvent } from '../fx/clientFxTypes.js';
 import type { BotDifficulty }     from '../../types/bot-api.js';
+import type { RuleModuleId, RuleProfile } from '../../types/rule-profile.js';
 import type { OpponentCount }   from '../bots/botRegistry.js';
 import {
   createBotPlayerIds,
@@ -67,6 +68,9 @@ export interface GameStoreState {
   playMode: PlayMode;
   botPlayerIds: readonly PlayerId[];
   botDifficulty: BotDifficulty;
+  /** Lobby / pre-start rule selection (RFC 007 Phase 2). */
+  lobbyRuleProfile: RuleProfile;
+  lobbyEnabledModules: readonly RuleModuleId[];
 }
 
 // ── Store Actions ──────────────────────────────────────────────────────────
@@ -96,6 +100,10 @@ export interface GameStoreActions {
   hostOnlineRoom(playerName: string): Promise<void>;
   joinOnlineRoom(playerName: string, roomCode: string): Promise<void>;
   setPlayMode(mode: PlayMode): void;
+  setLobbyRuleSettings(
+    ruleProfile: RuleProfile,
+    enabledModules: readonly RuleModuleId[],
+  ): void;
   showToast(message: string, variant?: import('./useUiStore.js').Toast['variant']): void;
   dismissToast(id: string): void;
   addLog(message: string, variant?: import('./useUiStore.js').LogEntry['variant']): void;
@@ -133,7 +141,9 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
     roomCode:        null,
     playMode:        'solo',
     botPlayerIds:    [],
-    botDifficulty:   DEFAULT_BOT_DIFFICULTY,
+    botDifficulty:        DEFAULT_BOT_DIFFICULTY,
+    lobbyRuleProfile:     'STANDARD',
+    lobbyEnabledModules:  [],
 
     setOverlay: (overlay) => ui().setOverlay(overlay),
 
@@ -159,10 +169,18 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
           ? repairGridChairSpawns(newState)
           : newState;
       const { playMode, mpClient, onlineClient } = get();
+      const lobbyRulesPatch =
+        fixed.phase === 'LOBBY'
+          ? {
+              lobbyRuleProfile:    fixed.ruleProfile,
+              lobbyEnabledModules: fixed.enabledModules,
+            }
+          : {};
       set({
         prevGameState: prev,
         gameState: fixed,
         gameSession: createGameSession(playMode, fixed, mpClient, onlineClient),
+        ...lobbyRulesPatch,
       });
 
       if (
@@ -232,8 +250,12 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
       const playerIds = [humanId, ...botIds] as const;
       const names = buildSoloPlayerNames(humanId, playerName, botIds);
 
+      const { lobbyRuleProfile, lobbyEnabledModules } = get();
       const gs = repairGridChairSpawns(
-        initializeGame(SOLO_GAME_ID, playerIds, names),
+        initializeGame(SOLO_GAME_ID, playerIds, names, {
+          ruleProfile:    lobbyRuleProfile,
+          enabledModules: lobbyEnabledModules,
+        }),
       );
 
       ui().resetUi();
@@ -538,6 +560,15 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
     // ── Multiplayer ────────────────────────────────────────────────────────
     setPlayMode: (mode) => set({ playMode: mode }),
 
+    setLobbyRuleSettings: (ruleProfile, enabledModules) => {
+      set({ lobbyRuleProfile: ruleProfile, lobbyEnabledModules: enabledModules });
+      const { gameState, mpClient, localPlayerId } = get();
+      const isHost = gameState?.turnOrder[0] === localPlayerId;
+      if (gameState?.phase === 'LOBBY' && mpClient && isHost) {
+        mpClient.updateLobbyRules(ruleProfile, enabledModules);
+      }
+    },
+
     hostRoom: (playerName) => {
       const playerId = crypto.randomUUID();
       const client = new LocalMultiplayerClient(playerId, playerName);
@@ -557,6 +588,8 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
       });
 
       const { roomCode } = client.createRoom();
+      const { lobbyRuleProfile, lobbyEnabledModules } = get();
+      client.updateLobbyRules(lobbyRuleProfile, lobbyEnabledModules);
 
       set({ roomCode });
       ui().setOverlay('lobby');

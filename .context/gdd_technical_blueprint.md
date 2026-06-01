@@ -1,47 +1,52 @@
 # GDD & Technical Blueprint — 13 Dead End Drive
 
-**Status:** Living alignment doc (engine + client). **Gameplay tie-breaker:** [Geeky Hobbies — 13 Dead End Drive](https://www.geekyhobbies.com/13-dead-end-drive-board-game-review-and-rules/) and `.context/board_rules_13_ded.md`.
+**Status:** Living alignment doc (engine + client).  
+**Product SRS:** [G01_digital_multiplayer_srs.md](../docs/requirements/G01_digital_multiplayer_srs.md)  
+**Gameplay tie-breaker:** [board_rules_13_ded.md](board_rules_13_ded.md), [HOW_TO_PLAY.md](../docs/HOW_TO_PLAY.md)
 
-**Not in scope:** 1313 Dead End Drive sequel.
+**Not in scope:** 2002 *1313 Dead End Drive* sequel.
 
-**Last sync:** 2026-05-27
+**Last sync:** 2026-06-01
 
 ---
 
-## 1. Game State & Entities (GDD §1)
+## 1. Game State & Entities
 
 | Entity | Target | Current engine | Alignment |
 |--------|--------|----------------|-----------|
 | Movement graph | 21×15 orthogonal | `GRID_21X15` | ✅ |
 | Start chairs | 12 cells around table | `GRID_21X15_DINING_CHAIR_CELLS` | ✅ |
+| Furniture obstacles | Block adjacency | 71 cells — `GRID_21X15_OBSTACLE_CATALOG` | ✅ |
 | Trap triggers | 5 skull mechanisms | 5 `TrapId` on grid | ✅ |
-| Secret passages | 5 teleport nodes | Empty in release | 🔲 Excluded |
+| Secret passages | 5 teleport nodes | `A15` `U15` `E10` `Q10` `K14` when **ADVANCED** + `SECRET_PASSAGES` | ✅ |
 | Exit | Front door | `K1` | ✅ |
-| Character deal | 12 guests rooted | `initializeGame()`; 2p = 4+2 secret | ✅ |
-| Portrait | Aunt Agatha + guest stack | `AUNT_AGATHA` opening; stack on doubles | ✅ |
-| Trap deck | 29 cards | `buildDeck()` — 10 det / 4 wild / 15 trap | ✅ |
+| Character deal | 12 guests rooted | **2p = 6**, **3p = 4**, **4p = 3** visible rooting (G01) | ✅ |
+| Portrait | Aunt Agatha + guest stack | `AUNT_AGATHA` opening; optional rotate on doubles | ✅ |
+| Trap deck | 29 cards | `buildDeck()` — 10 det / 4 wild / 5 single / 10 dual | ✅ |
 | Detective track | 10 steps to door | `DETECTIVE_TRACK_MAX_STEPS = 10` | ✅ |
 | Pawns | Any player moves any | No ownership guard on move | ✅ |
+| Rule profile | Standard vs advanced | `ruleProfile`, `enabledModules` on `GameState` | ✅ |
 
 ---
 
-## 2. Core Loop (GDD §2)
+## 2. Core Loop
 
 | Phase | Table rules | Engine | Notes |
 |-------|-------------|--------|-------|
-| Init | Shuffle decks; chairs | `initializeGame()` | ✅ |
+| Init | Shuffle decks; chairs | `initializeGame(options?)` | ✅ |
+| Lobby rules | Host picks STANDARD / ADVANCED | `LobbyRulesPanel`, `setLobbyRuleSettings` | ✅ |
 | Roll 2d6 | `d1`, `d2` | `ROLL_DICE` | ✅ |
-| Plan | Split or combined | `CHOOSE_MOVEMENT_PLAN` | ✅ |
-| Doubles | Optional portrait | `CHANGE_PORTRAIT` | ✅ No auto-draw |
+| Plan | Split or combined | `CHOOSE_MOVEMENT_PLAN` | ✅ Combined blocked until all chairs clear |
+| Doubles | Optional portrait | `CHANGE_PORTRAIT` | ✅ Not a deck card |
 | Move | Two pawns or combined | `FIRST_MOVE` / `SECOND_MOVE` | ✅ |
-| Chair phase | Clear table before free play | `moveCharacter` GRID guards | ✅ |
+| Chair phase | Clear table before combined | `chairPhase`, `moveCharacter` | ✅ |
 | Trap landing | Play / draw / decline | `AWAITING_TRAP_*` | ✅ |
 | Detective draw | Advance + redraw | `advanceDetective` | ✅ |
-| Win | Heir / last rooted / detective | `evaluateWinCondition` | ✅ |
+| Win | Heir / last rooted / detective | `evaluateWinCondition` | ✅ Portrait + rooting card for heir escape |
 
 ---
 
-## 3. Trap Deck — Implemented composition (29 cards)
+## 3. Trap Deck (29 cards)
 
 | Category | Qty | `buildDeck()` |
 |----------|-----|---------------|
@@ -51,71 +56,69 @@
 | Dual-trap combos | 10 | C(5,2) pairs |
 | **Total** | **29** | validated at build |
 
-Reference: `data/gdd_trap_deck.json` (GDD target mix differs; engine uses Milton Bradley–style 29 above).
+**Reference:** `data/gdd_trap_deck.json` (synced; `gddTrapDeckSync.spec.ts`).
 
-**Usecases:**
-
-| UC | Behavior | Engine |
-|----|----------|--------|
-| Kill on trap | Matching/wild from hand | `resolveTrapCard` | ✅ |
-| Detective on draw | Advance + redraw | `resolveDrawCard` | ✅ |
-| Portrait change | Doubles optional | `CHANGE_PORTRAIT` | ✅ (not hand card) |
-| Secret passage card | N/A this release | — | 🔲 |
+**Not in deck:** Change Portrait, Secret Passage (board module / doubles only).
 
 ---
 
-## 4. JSON Schemas (GDD §4)
+## 4. JSON data files
 
-- `data/gdd_trap_deck.json` — card catalog (reference)
-- `data/gdd_board_nodes.json` — 21×15 metadata (chairs, exit `K1`, traps)
+| File | Contents |
+|------|----------|
+| `data/gdd_trap_deck.json` | Full deck catalog + `not_in_deck` notes |
+| `data/gdd_board_nodes.json` | Chairs, exit, traps, obstacles (71), secret passage cells |
+
+**Engine catalogs:** `GRID_21X15_OBSTACLE_CATALOG`, `buildDeck()`, `registerBuiltinRuleModules()`.
 
 ---
 
-## 5. Validation Matrix — Engine mapping
+## 5. Validation Matrix
 
 | System | Implementation |
 |--------|----------------|
 | Dice split/combined | `turnOrchestrator`, `movementPlan.ts` |
-| Opening chair phase | `moveCharacter.ts` + `GRID_21X15_DINING_CHAIR_SET` |
-| Trap skull landing | `evaluateTraps` → pending trap flow |
-| Portrait Aunt Agatha | `gameInitializer`, `portraitStack.ts`, `PortraitHeirId` |
-| Rooting reveal on death | `rootingReveal.ts` → `exposedRooting` |
-| Detective 10 steps | `detectiveTrack.ts`, `DetectiveWidget.tsx` |
-| Win terminals | `winCondition.ts` + `characterOwnership.ts` |
+| Opening chair phase | `chairPhase.ts`, `moveCharacter.ts` |
+| Trap skull landing | `trapEvaluator` → pending trap flow |
+| Portrait Aunt Agatha | `gameInitializer`, `portraitStack.ts` |
+| Rooting on death | `rootingReveal.ts` → `exposedRooting` |
+| Detective 10 steps | `detectiveTrack.ts` |
+| Win terminals | `winCondition.ts`, `characterOwnership.ts` |
 | Client masking | `filterStateForPlayer` |
+| Rule modules | `packages/engine/src/rules/`, `buildRuleContext` |
+| Bot legality | `legalActions.ts` → `applyModuleLegalActions` |
 
 ---
 
-## 6. Client UI architecture
+## 6. Client UI
 
 ```
 App.tsx
-├── Scene3D / Scene2D     (board)
-└── HUD3D                 (overlays)
-    ├── Heir card (top-left)
-    ├── Estate console (right, collapsible)
-    ├── DetectiveWidget   (bottom-right, 10 dots)
-    ├── DeckWidget        (bottom-right)
-    └── HandPanel         (bottom center, horizontal)
+├── Scene3D / Scene2D
+└── HUD3D
+    ├── Heir card, PlayerTurnStrip
+    ├── Estate console (dice, rooting, logs)
+    ├── DetectiveWidget, DeckWidget, HandPanel
+LobbyScreen
+    ├── Mode picker (solo / local / online)
+    └── LobbyRulesPanel (STANDARD / ADVANCED modules)
 ```
 
-**Z-order:** HUD `z-10`; compass `z-5` (does not block console collapse).
+---
+
+## 7. Future work
+
+1. Supabase Auth JWT (`AUTH_REQUIRED=true`).
+2. Custom house-rule modules (neutral `RuleModuleId`s; rules TBD from product).
+3. Real alternate mix for `EXTENDED_TRAP_DECK` (currently same counts as standard).
+4. Optional `TRAP_DRAW` board squares (skull-only draws today).
 
 ---
 
-## 7. Recommended future work
-
-1. Phase 3.6 reconnect + hand projection.
-2. Optional: trap-card hand plays for portrait/secret-passage if GDD cards added.
-3. Optional: `TRAP_DRAW` cells on grid (currently skull-only draws).
-
----
-
-## 8. Development sandbox
+## 8. Sandbox
 
 ```typescript
 import { makeThreePlayerSandbox } from './fixtures/threePlayerSandbox.fixtures.js';
-const state = makeThreePlayerSandbox();
 ```
 
 See `src/__tests__/fixtures/threePlayerSandbox.spec.ts`.

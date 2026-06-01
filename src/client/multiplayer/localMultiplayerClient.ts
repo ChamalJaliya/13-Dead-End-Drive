@@ -136,6 +136,8 @@ export class LocalMultiplayerClient {
 
     const lobbyState: GameState = {
       gameId:         roomId,
+      ruleProfile:    'STANDARD',
+      enabledModules: [],
       boardVersion:   'GRID_21X15',
       phase:          'LOBBY',
       subPhase:       'AWAITING_ROLL',
@@ -273,6 +275,30 @@ export class LocalMultiplayerClient {
     return nextState;
   }
 
+  public updateLobbyRules(
+    ruleProfile: import('../../types/rule-profile.js').RuleProfile,
+    enabledModules: readonly import('../../types/rule-profile.js').RuleModuleId[],
+  ): void {
+    if (!this.roomId) {
+      throw new EngineError('ROOM_NOT_FOUND', 'Not in a room.');
+    }
+    const record = globalStore.getRoomById(this.roomId);
+    if (!record || record.state.phase !== 'LOBBY') {
+      throw new EngineError('INVALID_MOVE', 'Rules can only be changed in the lobby.');
+    }
+    if (record.state.turnOrder[0] !== this.playerId) {
+      throw new EngineError('UNAUTHORIZED_ACTION', 'Only the host can change rules.');
+    }
+    record.state = {
+      ...record.state,
+      ruleProfile,
+      enabledModules,
+      updatedAt: new Date().toISOString(),
+    };
+    persistRoomState(this.roomId, record.state, record.roomCode);
+    this.emit();
+  }
+
   public startGame(playerIds: readonly PlayerId[], names: Record<PlayerId, string>): GameState {
     if (!this.roomId) {
       throw new EngineError('ROOM_NOT_FOUND', 'Not in a room.');
@@ -285,7 +311,10 @@ export class LocalMultiplayerClient {
       throw new EngineError('UNAUTHORIZED_ACTION', 'Only joined players can start.');
     }
 
-    const gameState = initializeGame(this.roomId, playerIds, names);
+    const gameState = initializeGame(this.roomId, playerIds, names, {
+      ruleProfile:    record.state.ruleProfile,
+      enabledModules: record.state.enabledModules,
+    });
     record.state = gameState;
     persistRoomState(this.roomId, gameState, record.roomCode);
     idempotencyByRoom.set(this.roomId, new InMemoryIdempotencyStore());

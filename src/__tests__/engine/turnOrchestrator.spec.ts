@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { processTurn } from '../../engine/turnOrchestrator.js';
+import { initializeGame } from '../../engine/gameInitializer.js';
 import { EngineError } from '../../engine/EngineError.js';
 import type { GameState } from '../../types/game-state.js';
 import type { SocketEvent } from '../../types/socket-events.js';
@@ -179,6 +180,25 @@ describe('turnOrchestrator', () => {
       expect(nextState.activePlayerId).toBe(PLAYER_B_ID);
       expect(nextState.movesUsedThisTurn).toBe(0);
       expect(nextState.lastDiceRoll).toBeNull();
+    });
+
+    it('processes turns when ruleProfile is ADVANCED with no modules enabled', () => {
+      const advanced = initializeGame(
+        'orch-advanced',
+        ['p1', 'p2'],
+        { p1: 'A', p2: 'B' },
+        { ruleProfile: 'ADVANCED', enabledModules: [] },
+      );
+      const rollEvent: SocketEvent = {
+        type:      'ROLL_DICE',
+        eventId:   'evt-adv-roll',
+        gameId:    advanced.gameId,
+        playerId:  'p1',
+        timestamp: '2026-05-23T03:00:00Z',
+      };
+      const rolled = processTurn(advanced, rollEvent);
+      expect(rolled.subPhase).toBe('FIRST_MOVE');
+      expect(rolled.ruleProfile).toBe('ADVANCED');
     });
 
     it('throws GAME_ALREADY_OVER when processing turn after game ends', () => {

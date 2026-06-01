@@ -4,8 +4,8 @@
 ---
 
 > **Prepared by:** Development Team  
-> **Date:** May 27, 2026  
-> **Version:** 1.1  
+> **Date:** June 1, 2026  
+> **Version:** 1.2  
 > **Status:** Active Development · Seeking Collaboration / Funding / Partnership
 
 ---
@@ -14,7 +14,7 @@
 
 **13 Dead End Drive** is a browser-based, real-time multiplayer digital adaptation of the beloved 1993 Hasbro mystery board game of the same name. Players compete in a suspenseful 2–4 player experience set in a Victorian haunted mansion — secretly holding rooting loyalty cards, moving any guest pawn on the board, resolving trap encounters, and racing to satisfy one of three win conditions before the detective reaches the front door.
 
-This proposal outlines the project's vision, **current development status (accurate as of May 27, 2026)**, technical architecture, remaining milestones, and opportunities for collaboration or investment to bring the title to public release.
+This proposal outlines the project's vision, **current development status (accurate as of June 1, 2026)**, technical architecture, remaining milestones, and opportunities for collaboration or investment to bring the title to public release.
 
 ---
 
@@ -24,7 +24,7 @@ This proposal outlines the project's vision, **current development status (accur
 
 The 1993 *13 Dead End Drive* is a classic hidden-identity, trap-and-bluff strategy game in which:
 
-- **2–4 players** secretly hold "rooting" loyalty cards tied to mansion character pawns
+- **2–4 players** hold rooting loyalty cards (visible on your HUD; hidden from opponents) tied to mansion character pawns
 - Players strategically move **any** pawn across a trap-filled board — helping their own characters survive while eliminating rivals
 - The **Fireplace Portrait** determines the current featured heir — the guest shown in the portrait whose escape (or survival) drives the endgame
 - **Mechanical traps** (chandelier, suit of armor, bookcase, stairs, fireplace) can eliminate pawns when sprung
@@ -56,7 +56,7 @@ The project is actively under development. **Core engine, local multiplayer tran
 | **Phase 3.6** | Reconnect & hand projection | 🔲 **Pending** |
 | **Phase 4** | Client UI (2D/3D board, HUD, animations, lobby, game over) | ✅ **Complete** |
 
-> **Total test suite: 82/82 tests GREEN** (`npx vitest run`, 21 spec files including React UI specs).
+> **Total test suite: 160/160 tests GREEN** (`npx vitest run`, 41 spec files including React UI specs).
 
 ### 3.2 What Is Already Working
 
@@ -83,7 +83,7 @@ Visitors can launch the application (`npm run dev`) and experience:
 | **Backend / Realtime** | Supabase (persistence + WebSocket-style channels) |
 | **Game engine** | Custom pure-functional TypeScript (`src/engine/`) |
 | **Styling** | Tailwind CSS v4 |
-| **Testing** | Vitest 2.x — **82 tests**, all green (`*.spec.ts` + `*.spec.tsx`, happy-dom) |
+| **Testing** | Vitest 2.x — **160 tests**, all green (`*.spec.ts` + `*.spec.tsx`, happy-dom) |
 | **Type safety** | Strict mode · zero `any` · discriminated unions on events and card payloads |
 
 ---
@@ -113,7 +113,7 @@ Engine functions are **synchronous, immutable, and side-effect-free** — suitab
 
 ### 5.2 Network Transport (`src/network/`)
 
-- Full `GameState` broadcast with **per-player masking** (opponents cannot see hands or rooting; owners always see their own secret cards)
+- Full `GameState` broadcast with **per-player masking** (opponents cannot see hands or rooting; G01 visible rooting on your HUD)
 - Idempotent event routing (`IDEMPOTENCY_CONFLICT` guard)
 - Room lifecycle (create, join, play) via session manager + Supabase schema
 - **Local multiplayer client** for same-machine / cross-tab play without external hosting
@@ -130,7 +130,9 @@ Engine functions are **synchronous, immutable, and side-effect-free** — suitab
 
 ### Hidden Identity & Bluffing
 
-Players hold visible and (in 2-player games) secret rooting cards. **Any active player may move any alive pawn.** When a guest is eliminated, only that guest's rooting owner is revealed (`exposedRooting`); other secrets stay hidden until game over.
+Players hold rooting cards visible on their own HUD (**2p = 6**, **3p = 4**, **4p = 3** guests each per G01). **Any active player may move any alive pawn.** When a guest is eliminated, only that guest's rooting owner is revealed (`exposedRooting`); other players' rooting stays private.
+
+**Optional advanced rules (lobby):** secret passages (`SECRET_PASSAGES`), extended trap deck (`EXTENDED_TRAP_DECK`) when host selects `ADVANCED` profile.
 
 ### Trap Deck & Skull Spaces
 
@@ -197,7 +199,7 @@ Five board traps:
 | Item | Description |
 |------|-------------|
 | **Full online multiplayer** | Cross-device rooms, invite links beyond local/cross-tab |
-| **Trap deck extensions** | Optional GDD hand cards (portrait change / secret passage as deck cards) if desired |
+| **Custom house rules** | User-supplied rule pack (neutral module IDs; awaiting product doc) |
 | **Spectator / replay** | Read-only observers, event log replay |
 
 ### Explicitly out of scope (this release)
@@ -205,7 +207,7 @@ Five board traps:
 | Excluded | Reason |
 |----------|--------|
 | **1313 Dead End Drive** sequel mechanics | Different product (will board, midnight clock, etc.) |
-| **Secret passage teleports** on 21×15 board | Deferred |
+| **Portrait / secret passage as deck cards** | Not in product (doubles + board module) |
 | **Trap draw squares** on board | Trap cards drawn only on skull/trap landings |
 | **Legacy 118-node board** | Removed; `GRID_21X15` is canonical |
 
@@ -247,7 +249,7 @@ Independent game development, cultural preservation of out-of-print titles.
 
 | Metric | Value |
 |--------|-------|
-| **Test suite** | 82/82 passing (100% green) |
+| **Test suite** | 160/160 passing (100% green) |
 | **Core engine modules** | 12+ pure-functional modules |
 | **Playable board** | 21×15 grid (`GRID_21X15`), 315 cells |
 | **Start positions** | 12 dining chairs (`J5`–`L9`) |

@@ -1,86 +1,125 @@
 {
+  "implementation_status": "Implemented in packages/engine/src/cardDeck.ts — buildDeck()",
+  "source_of_truth": "buildDeck() + cardDeck.spec.ts",
+  "total_cards": 29,
+  "composition_summary": {
+    "DETECTIVE_CARD": 10,
+    "WILD_CARD": 4,
+    "TRAP_CARD_single": 5,
+    "TRAP_CARD_dual": 10,
+    "note": "Matches G01 §5.1.4.2 and docs/HOW_TO_PLAY.md. Portrait change is doubles-only (not a deck card). Secret passages are a board module (ADVANCED), not deck cards."
+  },
   "trap_deck": [
     {
-      "card_id": "TRAP_01",
-      "name": "The Chandelier",
-      "type": "SPECIFIC_TRAP",
-      "target_trap_id": "CHANDELIER",
-      "playable_timing": "ON_PAWN_LAND",
-      "auto_play": false,
-      "quantity": 3
-    },
-    {
-      "card_id": "TRAP_02",
-      "name": "The Bookcase",
-      "type": "SPECIFIC_TRAP",
-      "target_trap_id": "BOOKCASE",
-      "playable_timing": "ON_PAWN_LAND",
-      "auto_play": false,
-      "quantity": 3
-    },
-    {
-      "card_id": "TRAP_03",
-      "name": "Suit of Armor",
-      "type": "SPECIFIC_TRAP",
-      "target_trap_id": "SUIT_OF_ARMOR",
-      "playable_timing": "ON_PAWN_LAND",
-      "auto_play": false,
-      "quantity": 3
-    },
-    {
-      "card_id": "TRAP_04",
-      "name": "The Stairs",
-      "type": "SPECIFIC_TRAP",
-      "target_trap_id": "STAIRS",
-      "playable_timing": "ON_PAWN_LAND",
-      "auto_play": false,
-      "quantity": 3
-    },
-    {
-      "card_id": "TRAP_05",
-      "name": "Fireplace Chimney",
-      "type": "SPECIFIC_TRAP",
-      "target_trap_id": "FIREPLACE",
-      "playable_timing": "ON_PAWN_LAND",
-      "auto_play": false,
-      "quantity": 3
-    },
-    {
-      "card_id": "WILD_01",
-      "name": "Any Trap",
-      "type": "WILD_TRAP",
-      "target_trap_id": null,
-      "playable_timing": "ON_PAWN_LAND",
-      "auto_play": false,
-      "quantity": 2
-    },
-    {
-      "card_id": "STATE_01",
-      "name": "Change Portrait",
-      "type": "STATE_CHANGE",
-      "target_trap_id": null,
-      "playable_timing": "TURN_START_OR_END",
-      "auto_play": false,
-      "quantity": 5
-    },
-    {
-      "card_id": "STATE_02",
-      "name": "Secret Passage",
-      "type": "MOVEMENT_OVERRIDE",
-      "target_trap_id": null,
-      "playable_timing": "DURING_MOVEMENT",
-      "auto_play": false,
-      "quantity": 3
-    },
-    {
-      "card_id": "STATE_03",
+      "card_id": "DETECTIVE",
       "name": "Detective",
-      "type": "FORCE_PLAY",
+      "type": "DETECTIVE_CARD",
       "target_trap_id": null,
       "playable_timing": "IMMEDIATE_ON_DRAW",
       "auto_play": true,
-      "quantity": 4
+      "kept_in_hand": false,
+      "quantity": 10,
+      "engine_behavior": "Reveal, advance detective one step, discard, draw again until non-detective."
+    },
+    {
+      "card_id": "WILD",
+      "name": "Any Trap (Wild)",
+      "type": "WILD_CARD",
+      "target_trap_id": null,
+      "playable_timing": "ON_PAWN_LAND_TRAP",
+      "auto_play": false,
+      "kept_in_hand": true,
+      "quantity": 4,
+      "engine_behavior": "Springs any trap when played on a matching trap landing."
+    },
+    {
+      "card_id": "TRAP_SINGLE_CHANDELIER",
+      "name": "The Chandelier",
+      "type": "TRAP_CARD",
+      "subtype": "SINGLE_TRAP",
+      "target_trap_id": "CHANDELIER",
+      "matches_trap_ids": ["CHANDELIER"],
+      "playable_timing": "ON_PAWN_LAND_TRAP",
+      "quantity": 1
+    },
+    {
+      "card_id": "TRAP_SINGLE_SUIT_OF_ARMOR",
+      "name": "Suit of Armor",
+      "type": "TRAP_CARD",
+      "subtype": "SINGLE_TRAP",
+      "target_trap_id": "SUIT_OF_ARMOR",
+      "matches_trap_ids": ["SUIT_OF_ARMOR"],
+      "playable_timing": "ON_PAWN_LAND_TRAP",
+      "quantity": 1
+    },
+    {
+      "card_id": "TRAP_SINGLE_BOOKCASE",
+      "name": "The Bookcase",
+      "type": "TRAP_CARD",
+      "subtype": "SINGLE_TRAP",
+      "target_trap_id": "BOOKCASE",
+      "matches_trap_ids": ["BOOKCASE"],
+      "playable_timing": "ON_PAWN_LAND_TRAP",
+      "quantity": 1
+    },
+    {
+      "card_id": "TRAP_SINGLE_STAIRS",
+      "name": "The Stairs",
+      "type": "TRAP_CARD",
+      "subtype": "SINGLE_TRAP",
+      "target_trap_id": "STAIRS",
+      "matches_trap_ids": ["STAIRS"],
+      "playable_timing": "ON_PAWN_LAND_TRAP",
+      "quantity": 1
+    },
+    {
+      "card_id": "TRAP_SINGLE_FIREPLACE",
+      "name": "Fireplace Chimney",
+      "type": "TRAP_CARD",
+      "subtype": "SINGLE_TRAP",
+      "target_trap_id": "FIREPLACE",
+      "matches_trap_ids": ["FIREPLACE"],
+      "playable_timing": "ON_PAWN_LAND_TRAP",
+      "quantity": 1
+    },
+    {
+      "card_id": "TRAP_DUAL",
+      "name": "Dual-trap combination",
+      "type": "TRAP_CARD",
+      "subtype": "DUAL_TRAP",
+      "target_trap_id": null,
+      "playable_timing": "ON_PAWN_LAND_TRAP",
+      "quantity": 10,
+      "pairs": [
+        ["CHANDELIER", "SUIT_OF_ARMOR"],
+        ["CHANDELIER", "BOOKCASE"],
+        ["CHANDELIER", "STAIRS"],
+        ["CHANDELIER", "FIREPLACE"],
+        ["SUIT_OF_ARMOR", "BOOKCASE"],
+        ["SUIT_OF_ARMOR", "STAIRS"],
+        ["SUIT_OF_ARMOR", "FIREPLACE"],
+        ["BOOKCASE", "STAIRS"],
+        ["BOOKCASE", "FIREPLACE"],
+        ["STAIRS", "FIREPLACE"]
+      ],
+      "engine_behavior": "One card per unordered trap pair; springs either trap on the landing space."
     }
   ],
-  "total_cards": 29
+  "not_in_deck": [
+    {
+      "name": "Change Portrait",
+      "reason": "Portrait rotates on doubles roll (CHANGE_PORTRAIT), not from the trap deck."
+    },
+    {
+      "name": "Secret Passage",
+      "reason": "Board module SECRET_PASSAGES (ADVANCED profile), not a trap card."
+    }
+  ],
+  "deprecated_gdd_entries_removed": [
+    "5 trap types × 3 copies (15 singles)",
+    "2 wild cards",
+    "5 Change Portrait deck cards",
+    "3 Secret Passage deck cards",
+    "4 Detective cards"
+  ]
 }

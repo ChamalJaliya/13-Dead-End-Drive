@@ -16,6 +16,7 @@ import type {
   PlayerId,
   WinCondition,
 } from './enums.js';
+import type { RuleModuleId, RuleProfile } from './rule-profile.js';
 import type { CharacterId, TrapId, CellId }                                           from './enums.js';
 import type {
   ActionCard,
@@ -35,11 +36,10 @@ export interface PlayerState {
   /** Face-down rooting cards (visible to this player only). */
   readonly characterIds:  CharacterId[];
   /**
-   * Two-player variant: hidden character cards (PDF: 2 face-down each).
-   * Not shown to any client until `GameState.secretCardsRevealed`.
+   * Legacy field — G01 standard uses visible rooting only; kept for schema compat.
    */
   readonly secretCharacterIds: readonly CharacterId[];
-  /** True when secret cards exist but identities are still hidden (UI placeholder). */
+  /** Legacy — false when all rooting guests are in `characterIds`. */
   readonly hasHiddenSecretCard: boolean;
   /** Cards in this player's hand (trap cards and wild cards only; detective cards are never kept). */
   readonly hand:          ActionCard[];
@@ -62,6 +62,10 @@ export interface DiceRollResult {
 
 export interface GameState {
   readonly gameId:            GameId;
+  /** STANDARD = G01 / 1993 digital rules; ADVANCED enables `enabledModules`. */
+  readonly ruleProfile:       RuleProfile;
+  /** Module toggles when `ruleProfile` is ADVANCED; ignored for STANDARD. */
+  readonly enabledModules:    readonly RuleModuleId[];
   /** GRID_21X15 = canonical mansion; FIXTURE = vitest adjacency graph only */
   readonly boardVersion:      BoardVersion;
   readonly phase:             GamePhase;

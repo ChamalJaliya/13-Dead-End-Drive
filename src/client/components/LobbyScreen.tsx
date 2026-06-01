@@ -8,6 +8,7 @@ import { useGameStore } from '../store/useGameStore.js';
 import type { BotDifficulty } from '../../types/bot-api.js';
 import type { OpponentCount } from '../bots/botRegistry.js';
 import type { PlayMode } from '../store/applyPlayerAction.js';
+import { LobbyRulesPanel } from './LobbyRulesPanel.js';
 
 const OPPONENT_OPTIONS: readonly OpponentCount[] = [1, 2, 3] as const;
 const DIFFICULTY_OPTIONS: readonly BotDifficulty[] = ['EASY', 'NORMAL', 'HARD'] as const;
@@ -65,6 +66,9 @@ export function LobbyScreen() {
     startMultiplayerGame,
     leaveRoom,
     showToast,
+    lobbyRuleProfile,
+    lobbyEnabledModules,
+    setLobbyRuleSettings,
   } = useGameStore();
 
   const [lobbyMode, setLobbyMode] = useState<LobbyMode>('solo');
@@ -197,6 +201,17 @@ export function LobbyScreen() {
                     );
                   })}
                 </ul>
+              </section>
+
+              <div className="lobby-divider" aria-hidden />
+
+              <section className="lobby-card-section">
+                <LobbyRulesPanel
+                  ruleProfile={lobbyRuleProfile}
+                  enabledModules={lobbyEnabledModules}
+                  disabled={!isHost}
+                  onChange={setLobbyRuleSettings}
+                />
               </section>
 
               <div className="lobby-divider" aria-hidden />
@@ -341,6 +356,12 @@ export function LobbyScreen() {
                         </select>
                       </div>
                     </div>
+
+                    <LobbyRulesPanel
+                      ruleProfile={lobbyRuleProfile}
+                      enabledModules={lobbyEnabledModules}
+                      onChange={setLobbyRuleSettings}
+                    />
 
                     <div className="lobby-cta-block">
                       <button

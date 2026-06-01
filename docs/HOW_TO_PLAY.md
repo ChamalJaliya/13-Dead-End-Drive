@@ -24,7 +24,7 @@ Everyone else is trying to do the same.
 | **Board** | Mansion grid with rooms, furniture, five trap spaces (skull markers), and a detective track (10 steps to the door). |
 | **12 guests** | Placed on **12 red dining chairs** around the central table (one guest per chair). |
 | **Rooting cards** | Dealt face-down. You learn which guests you are cheering for. **Never show your cards to others** during play. |
-| **Portrait** | Starts on **Aunt Agatha**. It will later show a guest — that guest is the current **featured heir**. |
+| **Portrait stack** | **13 cards** shuffled face-down: the **12 guests** plus **Aunt Agatha**. The fireplace **starts** showing Agatha; her card is still in the stack until the first doubles rotation. |
 | **Trap deck** | 29 cards shuffled (detective cards, wild cards, and trap cards). |
 | **Detective** | Marker starts at step 0; step 10 is the front door. |
 
@@ -32,11 +32,11 @@ Everyone else is trying to do the same.
 
 | Players | Cards each player receives |
 |---------|----------------------------|
-| **2** | 4 visible rooting guests + **2 secret** guests |
+| **2** | 6 rooting guests each (all visible on your HUD) |
 | **3** | 4 rooting guests each |
 | **4** | 3 rooting guests each |
 
-In a **2-player** game, your two secret guests are revealed to everyone only when the game ends.
+Every rooting guest is shown on **your** cards. Opponents never see your rooting hand (G01 hidden identity).
 
 ---
 
@@ -104,15 +104,35 @@ You cannot split a single die (e.g. use 4 as 2+2).
 
 ---
 
-## Doubles (optional portrait change)
+## Fireplace portrait & doubles
 
-If both dice show the **same number** (doubles):
+The **featured heir** is whoever is shown in the fireplace portrait. That guest matters for [heir escape](#win-1--heir-escape) and [detective arrival](#detective-track) wins.
 
-- You **may** rotate the portrait **once** before your first move (optional — you can skip this).  
-- The top card of the hidden portrait stack is revealed; that guest becomes the new **featured heir**.  
-- You still choose **split** or **combined** and move normally. Doubles do **not** grant an extra roll or a free card draw.
+### The 13-card stack
 
-If the featured guest **dies**, the portrait advances to the next guest in the stack.
+At setup, the game shuffles **13 portrait cards**: one for each of the **12 mansion guests**, plus **Aunt Agatha**.
+
+| When | What happens |
+|------|----------------|
+| **Game start** | The fireplace shows **Aunt Agatha**. She is **not** a pawn on the board. Her card remains **in** the shuffled stack. |
+| **First doubles** (first time anyone rolls doubles) | If the active player chooses to rotate, **Aunt Agatha’s card is removed** from the stack. The new featured heir is the **top alive guest** on the stack (dead cards on top are discarded from the stack as they are revealed). |
+| **Later doubles** | The active player **may** rotate **once** before their first move, or **skip** rotation. |
+
+You cannot rotate the portrait more than **once per turn**, and only on a doubles roll, and only **before** your first move that turn.
+
+### How rotation works (after the first Agatha reveal)
+
+When you choose to rotate on doubles:
+
+1. **If the current featured guest is alive** — that guest’s card goes to the **bottom** of the portrait stack.  
+2. **If the current featured guest is already dead** — that card is **removed permanently** from the stack (not moved to the bottom).  
+3. The new featured heir is the **top card** of the stack. **Skip any dead guests** on top — keep revealing until an **alive** guest appears (or the stack is empty).
+
+Then continue your turn: choose **split** or **combined** and move as usual. Doubles do **not** grant an extra roll or a mandatory card draw.
+
+### When the featured guest dies (traps / elimination)
+
+If the portrait guest is **eliminated** during play, the portrait **advances automatically** using the same stack rules: the dead guest’s card leaves the stack, and the next **alive** guest on top becomes the new featured heir.
 
 ---
 
@@ -139,7 +159,7 @@ You only draw when someone **lands** on a trap this turn (there are no separate 
 ### When a trap fires
 
 - The guest on that space is **eliminated**.  
-- If they were the **featured heir**, the portrait updates.  
+- If they were the **featured heir**, the portrait advances to the next **alive** card on the stack (see [Fireplace portrait & doubles](#fireplace-portrait--doubles)).  
 - If they were on someone’s rooting card, that player’s interest in them is **revealed** (one card at a time — not your full hand).
 
 ---
@@ -153,9 +173,9 @@ You only draw when someone **lands** on a trap this turn (there are no separate 
 
 ---
 
-## Rooting cards and secrets
+## Rooting cards
 
-- Only **you** see your full hand (including secret guests in a 2-player game).  
+- Only **you** see your full rooting hand — all guests you root for are visible on your HUD.  
 - When a guest **dies**, players learn **who was rooting for that guest** — but not your other cards.  
 - Root for guests who match the portrait, can reach the door, or are the last ones standing.
 
@@ -176,13 +196,26 @@ This win needs **two things at once**:
 | Requirement | What it means |
 |-------------|----------------|
 | **Portrait match** | The guest in the **fireplace portrait** (featured heir) must be the one who steps onto the **front door (K1)**. |
-| **Your rooting card** | You must hold that **same** guest on your rooting cards (visible or secret). |
+| **Your rooting card** | You must hold that **same** guest on your rooting cards. |
 
 **Does not win:** A guest you root for reaches the door, but a *different* guest is on the portrait.  
 **Does not win:** The portrait guest reaches the door, but no player holds their rooting card.  
 **Does not win:** Aunt Agatha is on the portrait (she is not a board guest).
 
 Watch **Current Active Heir** (top-left HUD) — that face must escape, and you must have their card.
+
+---
+
+## Advanced rules (optional)
+
+Host or solo player can choose **Advanced** in the lobby before starting. Modules stack on top of standard G01 rules:
+
+| Module | Effect |
+|--------|--------|
+| **Secret passages** | Five linked spaces (`A15`, `U15`, `E10`, `Q10`, `K14`). From any passage, move to any other passage for **1 pip** (teleport). |
+| **Extended trap deck** | Experimental 29-card deck variant (same counts; for playtesting). |
+
+Default is **Standard** — chair phase, combined dice after table clear, doubles portrait, and detective chain only.
 
 ---
 
@@ -208,17 +241,9 @@ The **red chairs on the board** are **guest starting positions**, not player sea
 
 ## What this release does *not* include
 
-These are **not** in the current digital ruleset (see [Advanced rules](#advanced-rules-future) for plans):
-
-- Secret passage teleports on the board  
 - *1313 Dead End Drive* (2002 sequel) rules  
-- House-rule variants as a menu toggle  
-
----
-
-## Advanced rules (future)
-
-The game today runs one **standard** rules engine (1993 rules above). A future **advanced rule engine** would let hosts enable extra modules (e.g. secret passages, variant decks) without changing the default experience. See [`.context/rfc/rfc_007_advanced_rule_engine.md`](../.context/rfc/rfc_007_advanced_rule_engine.md) for the technical plan.
+- Custom house-rule packs (beyond the two Advanced modules below)  
+- Portrait change or secret passage as **trap deck cards** (portrait uses doubles + stack only; passages use the board module)
 
 ---
 
@@ -232,4 +257,4 @@ The game today runs one **standard** rules engine (1993 rules above). A future *
 
 ---
 
-*Last updated: 2026-06-01 — matches engine chair-phase + combined-move restrictions.*
+*Last updated: 2026-06-01 — 13-card portrait stack, G01 rooting, optional Advanced modules (secret passages, extended deck).*

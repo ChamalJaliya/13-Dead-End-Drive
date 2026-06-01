@@ -21,6 +21,11 @@ import { applyMovementPlan } from './movementPlan.js';
 import { moveCharacter }           from './moveCharacter.js';
 import { resolveTrapCard, resolveDrawCard, resolveTrapDecline } from './trapEvaluator.js';
 import { evaluateWinCondition }    from './winCondition.js';
+import {
+  buildRuleContext,
+  runAfterMoveHooks,
+  runModuleGuards,
+} from './rules/registry.js';
 
 export function processTurn(state: GameState, event: SocketEvent): GameState {
   if (state.phase === 'GAME_OVER') {
@@ -31,6 +36,7 @@ export function processTurn(state: GameState, event: SocketEvent): GameState {
   }
 
   const { playerId, timestamp } = event;
+  const ruleCtx = buildRuleContext(state);
 
   // ── Guard 1: Turn ownership (all client-initiated events must come from active player) ──
   if (state.activePlayerId !== playerId) {
@@ -70,7 +76,9 @@ export function processTurn(state: GameState, event: SocketEvent): GameState {
     }
 
     case 'MOVE_PAWN': {
-      nextState = moveCharacter(state, event as MovePawnEvent);
+      runModuleGuards(ruleCtx, event);
+      nextState = moveCharacter(ruleCtx.state, event as MovePawnEvent);
+      nextState = runAfterMoveHooks(nextState, ruleCtx);
       nextState = evaluateWinCondition(nextState);
 
       // If no trap is pending and we entered TURN_END, wrap up the turn
@@ -132,6 +140,7 @@ function changePortraitOnDoubles(state: GameState, timestamp: string): GameState
   const currentHeirId = state.activePortrait.currentHeirId;
   const updatedPortrait = applyPortraitStackRotation(
     state.activePortrait,
+    state.characters,
     state.turnNumber,
     'DOUBLES_ROLL',
   );

@@ -14,7 +14,6 @@
 import type { GameState } from '@ded/types/game-state.js';
 import type { PlayerId, WinCondition } from '@ded/types/enums.js';
 import {
-  isTwoPlayerVariant,
   playerHasLivingRootedCharacter,
   resolveCharacterOwner,
 } from './characterOwnership.js';
@@ -105,19 +104,12 @@ export function evaluateWinCondition(state: GameState): GameState {
   const resolution = checkWinCondition(state);
 
   if (resolution.hasEnded && state.phase !== 'GAME_OVER') {
-    const winnerId = resolution.winner;
-    const revealAllSecrets =
-      isTwoPlayerVariant(state) &&
-      winnerId !== null &&
-      Object.values(state.players[winnerId]?.secretCharacterIds ?? []).some(
-        (id) => state.characters[id]?.status === 'ALIVE',
-      );
     return {
       ...state,
       phase:                 'GAME_OVER',
       winner:                resolution.winner,
       winCondition:          resolution.winCondition,
-      secretCardsRevealed:   revealAllSecrets ? true : state.secretCardsRevealed,
+      secretCardsRevealed:   state.secretCardsRevealed,
       updatedAt:             new Date().toISOString(),
     };
   }

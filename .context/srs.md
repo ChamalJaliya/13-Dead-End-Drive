@@ -5,6 +5,7 @@
 #   v1.1  Phase 1.4 — Trap trigger condition resolved to position-only (no card match)
 #   v1.2  Phase 2.2 — Sprint 2.2 closed; non-heir exit rule confirmed as silent FOYER reset
 #   v1.3  2026-05-27 — Phases 2–4 complete for solo/local; GRID_21X15 + HUD overlays
+#   v1.4  2026-06-01 — G01 rooting, RFC 007 rule modules, GDD JSON sync, 160 tests
 # ─────────────────────────────────────────────────────────────────────────────
 
 ---
@@ -25,7 +26,9 @@
   | Phase 3.1–3.5 | Transport + local multiplayer | ✅ COMPLETE |
   | Phase 3.6 | Reconnect & hand projection | 🔲 PENDING |
   | Phase 4 | Client UI (2D/3D, HUD, hand/deck/detective) | ✅ COMPLETE |
-  | Tests | Vitest suite | ✅ 82/82 GREEN |
+  | Phase 5 | Online (Colyseus + Nest) | ✅ COMPLETE |
+  | RFC 007 | Rule profile + optional modules | ✅ Phases 1–5 |
+  | Tests | Vitest suite | ✅ 160/160 GREEN |
 
 ---
 

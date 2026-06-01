@@ -26,6 +26,14 @@ Living source of truth for public TypeScript interfaces, socket events, and enum
 | 2026-06-01 | FX | `planFxBatchPlayback` + `executeFxBatchPlan` (testable playback planning) | `src/client/fx/planFxBatchPlayback.ts`, `executeFxBatchPlan.ts` |
 | 2026-06-01 | Transport | Colyseus + Nest online play, lobby REST, env vars | RFC 005, `apps/game-server/` |
 | 2026-06-01 | Arch | Workspace packages `@ded/*`, `GameSession`, `dispatchGameEvent`, `useUiStore` | RFC 006, `packages/` |
+| 2026-06-01 | Rules | `ruleProfile`, `enabledModules` on `GameState`; RFC 007 Phase 1 registry | `rule-profile.ts`, `packages/engine/src/rules/` |
+| 2026-06-01 | Rules | G01 visible rooting: 2p = 6 cards each, no `secretCharacterIds` deal | `gameInitializer.ts` |
+| 2026-06-01 | Rules | RFC 007 Phase 3: `SECRET_PASSAGES` board cells + movement hop validation | `applyBoardModules.ts`, `moveCharacter.ts` |
+| 2026-06-01 | Rules | RFC 007 Phase 4: `applyModuleLegalActions` in `enumerateLegalActions` | `legalActions.ts`, `rules/` |
+| 2026-06-01 | Rules | RFC 007 Phase 5: `EXTENDED_TRAP_DECK` → `buildExtendedDeck()` | `cardDeck.ts` |
+| 2026-06-01 | GDD | `GRID_21X15_OBSTACLE_CATALOG` (71 cells); `gdd_board_nodes.json` sync | `boardDefinition.ts`, `data/` |
+| 2026-06-01 | GDD | `gdd_trap_deck.json` mirrors `buildDeck()` counts | `data/gdd_trap_deck.json` |
+| 2026-06-01 | Client | `setLobbyRuleSettings`, `LobbyRulesPanel`, `updateLobbyRules` | `useGameStore.ts`, `localMultiplayerClient.ts` |
 
 ---
 
@@ -172,12 +180,25 @@ Used by `FireplacePortrait.currentHeirId`. Aunt Agatha is portrait-only (not a m
 
 | Field | Type | Notes |
 |-------|------|-------|
+| `ruleProfile` | `'STANDARD' \| 'ADVANCED'` | Default `STANDARD`; G01 baseline |
+| `enabledModules` | `readonly RuleModuleId[]` | Ignored when `STANDARD` |
 | `boardVersion` | `'GRID_21X15' \| 'FIXTURE'` | Play uses `GRID_21X15` |
 | `subPhase` | `GameSubPhase` | Includes `CHOOSE_MOVEMENT_PLAN`, `AWAITING_TRAP_*` |
 | `movementPlan` | `'SPLIT' \| 'COMBINED' \| null` | After roll |
 | `exposedRooting` | `Partial<Record<CharacterId, PlayerId>>` | Public on elimination |
 | `detectivePosition` | `DetectiveTrack` | `maxSteps: 10` |
 | `activePortrait.currentHeirId` | `PortraitHeirId` | Starts `AUNT_AGATHA` |
+| `ruleProfile` | `'STANDARD' \| 'ADVANCED'` | Default `STANDARD`; host sets in lobby |
+| `enabledModules` | `readonly RuleModuleId[]` | Used only when `ruleProfile === 'ADVANCED'` |
+
+### `RuleModuleId` (builtin)
+
+| Module | Effect |
+|--------|--------|
+| `SECRET_PASSAGES` | Five teleport-linked cells on board at init |
+| `EXTENDED_TRAP_DECK` | `buildExtendedDeck()` (same 29-card mix; `ext-` card ids) |
+
+Types: `packages/types/src/rule-profile.ts`. Registry: `packages/engine/src/rules/`.
 
 ### `DetectiveTrack`
 
@@ -217,8 +238,8 @@ export type SocketErrorCode =
 
 | Viewer | Self | Opponents |
 |--------|------|-----------|
-| `characterIds` | Full | Hidden (`[]`) |
-| `secretCharacterIds` | Full (always) | Hidden until `secretCardsRevealed` |
+| `characterIds` | Full (G01: all rooting guests on HUD) | Hidden (`[]`) |
+| `secretCharacterIds` | Legacy field (empty in new deals) | Hidden |
 | `hand` | Full | Hidden (`[]`) |
 | `exposedRooting` | Full (global) | Full (global) |
 

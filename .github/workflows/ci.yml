@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, develop]
   pull_request:
-    branches: [master, main]
+    branches: [master, main, develop]
 
 jobs:
   test:
@@ -20,6 +20,6 @@ jobs:
           python-version: '3.13'
       - run: npm ci
       - run: npm run typecheck
-      - run: npx vitest run --reporter=verbose
+      - run: npx vitest run --config vitest.config.ts --reporter=verbose
       - run: npm run test:bot-ai
       - run: npm run lint:boundaries

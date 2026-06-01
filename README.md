@@ -22,7 +22,30 @@ npm run dev
 
 Open the lobby, enter your name, choose **1–3 AI opponents** and difficulty, then **Start solo game**.
 
-### Online multiplayer (server-authoritative)
+## Run everything with Docker
+
+Runs the **client**, **game-server**, and **bot-ai** together. No local Node or Python required.
+
+```bash
+cp .env.docker.example .env   # optional — defaults work for local solo/online
+docker compose up --build
+# or: npm run docker:up
+```
+
+| Service      | URL |
+|--------------|-----|
+| Game (UI)    | http://localhost:8080 |
+| Colyseus WS  | ws://localhost:2567 |
+| Bot AI       | http://localhost:8000 |
+| Lobby REST   | via UI at `/lobby-api` (proxied to game-server) |
+
+- **Solo vs bots** and **online multiplayer** both work; the UI proxies `/bot-api` and `/lobby-api` to the backend containers.
+- Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env` only if you enable production auth (`NODE_ENV=production`, `AUTH_REQUIRED=true`).
+- To play from another device on your LAN, set `VITE_COLYSEUS_URL=ws://<your-host-ip>:2567` in `.env`, then rebuild the client: `docker compose build client`.
+
+Stop: `docker compose down` or `npm run docker:down`.
+
+### Online multiplayer (local dev, no Docker)
 
 ```bash
 cp .env.example .env
@@ -38,7 +61,7 @@ Use **Host online room** / **Join online** in the lobby. Local hot-seat multipla
 
 The client enumerates legal moves in TypeScript and asks the bot service to pick one. If the service is down, a built-in heuristic fallback runs in the browser.
 
-### Run bot service locally
+### Run bot service only (Docker)
 
 ```bash
 docker compose up bot-ai
@@ -78,3 +101,5 @@ cd services/bot-ai && PYTHONPATH=. python3 -m pytest tests/ -v
 | `npm test` | Vitest suite |
 | `npm run test:bot-ai` | pytest for bot-ai |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run docker:up` | Build and start full stack (Docker Compose) |
+| `npm run docker:down` | Stop Docker Compose stack |

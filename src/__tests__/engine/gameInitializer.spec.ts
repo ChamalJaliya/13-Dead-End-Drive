@@ -10,11 +10,79 @@ import {
   GRID_21X15_DINING_CHAIR_CELLS,
   GRID_21X15_RED_CHAIRS,
 } from '../../engine/boardDefinition.js';
+import type { GameState } from '../../types/game-state.js';
 import { CHARACTER_IDS } from '../../types/enums.js';
 import { DETECTIVE_TRACK_MAX_STEPS } from '../../types/enums.js';
 import { buildDeck } from '../../engine/cardDeck.js';
 
+/** Minimal pre-start lobby (matches LocalMultiplayerClient.createRoom). */
+function makeLobbyStub(): GameState {
+  const now = '2026-06-01T00:00:00.000Z';
+  return {
+    gameId:         'lobby-room-1',
+    boardVersion:   'GRID_21X15',
+    phase:          'LOBBY',
+    subPhase:       'AWAITING_ROLL',
+    turnNumber:     1,
+    activePlayerId: 'host-1',
+    turnOrder:      ['host-1'],
+    players: {
+      'host-1': {
+        playerId:     'host-1',
+        displayName:  'Host',
+        avatarUrl:    null,
+        characterIds: [],
+        secretCharacterIds:  [],
+        hasHiddenSecretCard: false,
+        hand:         [],
+        isEliminated: false,
+        isConnected:  true,
+        lastSeenAt:   now,
+      },
+    },
+    characters:        {} as GameState['characters'],
+    board:             {} as GameState['board'],
+    traps:             {} as GameState['traps'],
+    detectivePosition: {
+      currentStep: 0,
+      maxSteps:    10,
+      trackCells:  [],
+      isAtExit:    false,
+    },
+    activePortrait: {
+      currentHeirId:     'AUNT_AGATHA',
+      portraitStack:     ['CHARITY'],
+      portraitHistory:   [],
+      lastChangedOnTurn: 1,
+      lastChangedReason: 'OPENING_AGATHA',
+    },
+    lastDiceRoll:      null,
+    pipsRemaining:     null,
+    movementPlan:      null,
+    firstMoveCharacterId: null,
+    movesUsedThisTurn: 0,
+    pendingTrapCell:   null,
+    pendingTrapHandCardIds: null,
+    pendingTrapDrawnCardId: null,
+    deck:              [],
+    discardPile:       [],
+    winner:               null,
+    winCondition:         null,
+    exposedRooting:      {},
+    secretCardsRevealed:  false,
+    createdAt:         now,
+    updatedAt:         now,
+  };
+}
+
 describe('gameInitializer', () => {
+  it('does not repair or throw on LOBBY stub before initializeGame', () => {
+    const lobby = makeLobbyStub();
+    expect(gridChairSpawnNeedsRepair(lobby)).toBe(false);
+    expect(() => repairGridChairSpawns(lobby)).not.toThrow();
+    expect(repairGridChairSpawns(lobby)).toBe(lobby);
+  });
+
   it('places all twelve pawns on GRID_21X15 dining chairs', () => {
     const state = initializeGame('game-setup-1b', ['p1', 'p2'], { p1: 'A', p2: 'B' });
     const chairSet = new Set(GRID_21X15_RED_CHAIRS);

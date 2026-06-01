@@ -22,6 +22,9 @@
     "test:ui": "vitest --ui",
     "test:bot-ai": "cd services/bot-ai && python3 -m pytest tests/ -q",
     "test:contract": "vitest run src/__tests__/contracts && npm run test:bot-ai",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
     "lint:boundaries": "depcruise packages apps/game-server/src src/server src/client --config .dependency-cruiser.cjs",
     "typecheck": "tsc --noEmit"
   },

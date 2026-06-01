@@ -65,9 +65,11 @@ function dealCharacterCards(
 /** True when pawns or board still use pre–dining-ring chair cells. */
 export function gridChairSpawnNeedsRepair(state: GameState): boolean {
   if (state.boardVersion !== 'GRID_21X15') return false;
+  if (state.phase === 'LOBBY') return false;
 
   const pawnMismatch = ALL_CHARACTER_IDS.some((id) => {
-    const ch = state.characters[id]!;
+    const ch = state.characters[id];
+    if (!ch) return false;
     return ch.isOnRedChair && !GRID_21X15_DINING_CHAIR_SET.has(ch.position);
   });
 
@@ -87,6 +89,7 @@ export function gridChairSpawnNeedsRepair(state: GameState): boolean {
  */
 export function repairGridChairSpawns(state: GameState): GameState {
   if (state.boardVersion !== 'GRID_21X15') return state;
+  if (state.phase === 'LOBBY') return state;
 
   const board = { ...GRID_21X15_INITIAL_BOARD };
   for (const cell of Object.values(state.board)) {
@@ -105,8 +108,8 @@ export function repairGridChairSpawns(state: GameState): GameState {
   }
 
   ALL_CHARACTER_IDS.forEach((charId, idx) => {
-    const ch = characters[charId]!;
-    if (ch.status !== 'ALIVE' || !ch.isOnRedChair) return;
+    const ch = characters[charId];
+    if (!ch || ch.status !== 'ALIVE' || !ch.isOnRedChair) return;
 
     const chair = GRID_21X15_DINING_CHAIR_CELLS[idx]!;
     characters[charId] = { ...ch, position: chair };

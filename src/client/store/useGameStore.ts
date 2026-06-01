@@ -529,6 +529,15 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
       const playerId = crypto.randomUUID();
       const client = new LocalMultiplayerClient(playerId, playerName);
 
+      set({
+        mpClient:        client,
+        localPlayerId:   playerId,
+        localPlayerName: playerName,
+        playMode:        'local',
+        onlineClient:    null,
+        gameSession:     null,
+      });
+
       client.onStateSync(({ gameState, roomCode: rc }) => {
         get().syncServerState(gameState);
         set({ roomCode: rc });
@@ -536,15 +545,7 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
 
       const { roomCode } = client.createRoom();
 
-      set({
-        mpClient:       client,
-        localPlayerId:  playerId,
-        localPlayerName: playerName,
-        roomCode,
-        playMode:       'local',
-        onlineClient:   null,
-        gameSession:    null,
-      });
+      set({ roomCode });
       ui().setOverlay('lobby');
       get().addLog(`Room created — code: ${roomCode}`, 'success');
     },
@@ -601,19 +602,20 @@ export const useGameStore = create<GameStoreState & GameStoreActions>()(
       const playerId = crypto.randomUUID();
       const client = new LocalMultiplayerClient(playerId, playerName);
       try {
+        set({
+          mpClient:        client,
+          localPlayerId:   playerId,
+          localPlayerName: playerName,
+          playMode:        'local',
+          onlineClient:    null,
+          gameSession:     null,
+        });
         client.onStateSync(({ gameState, roomCode: rc }) => {
           get().syncServerState(gameState);
           set({ roomCode: rc });
         });
         client.joinRoom(code);
-        set({
-          mpClient:       client,
-          localPlayerId:  playerId,
-          localPlayerName: playerName,
-          roomCode:       code,
-          playMode:       'local',
-          onlineClient:   null,
-        });
+        set({ roomCode: code });
         get().addLog(`Joined room ${code}.`, 'success');
       } catch (err) {
         if (err instanceof EngineError) get().showToast(err.message, 'warn');

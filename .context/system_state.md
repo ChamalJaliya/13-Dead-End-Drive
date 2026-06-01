@@ -12,7 +12,7 @@
 
 **Phase 5 — Nest + Colyseus transport** (active)
 > `apps/game-server` — authoritative online play, Supabase persist, lobby REST.
-> Run `npm run dev` → client + game-server + bot-ai (docker compose).
+> Run `npm run dev` (local) or `npm run docker:up` (client :8080, game-server :2567, bot-ai :8000).
 
 **Phase 4 — Client UI** (feature-complete for solo/local/online lobby)
 > Hybrid: solo/local client engine; online server-authoritative via Colyseus.

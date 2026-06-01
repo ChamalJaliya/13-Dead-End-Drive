@@ -270,7 +270,8 @@ npm run typecheck
 # Game + client tests (expect 160 passing)
 npx vitest run --reporter=verbose
 
-# Bot service tests
+# Bot service tests (install dev deps once)
+python3 -m pip install -e "./services/bot-ai[dev]"
 npm run test:bot-ai
 
 # Package boundaries (optional)

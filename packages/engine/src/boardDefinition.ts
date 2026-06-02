@@ -414,6 +414,125 @@ export const GRID_21X15_SECRET_PASSAGE_CELLS: readonly CellId[] = [
 /** @deprecated Use GRID_21X15_SECRET_PASSAGE_CELLS */
 export const GRID_21X15_SECRET_PASSAGES: readonly CellId[] = GRID_21X15_SECRET_PASSAGE_CELLS;
 
+// =============================================================================
+// GUTTER WALLS — edge blockers in tile gaps (cells remain playable)
+// =============================================================================
+
+/** Canonical undirected edge between two orthogonal neighbors. */
+export type BoardEdgeId = `${CellId}|${CellId}`;
+
+export function toBoardEdgeId(a: CellId, b: CellId): BoardEdgeId {
+  return (a < b ? `${a}|${b}` : `${b}|${a}`) as BoardEdgeId;
+}
+
+export type GutterWallSegment =
+  | {
+      readonly axis: 'horizontal';
+      readonly rowLow: number;
+      readonly colStart: string;
+      readonly colEnd: string;
+    }
+  | {
+      readonly axis: 'vertical';
+      readonly colLeft: string;
+      readonly rowStart: number;
+      readonly rowEnd: number;
+    };
+
+function colLetterRange(start: string, end: string): readonly string[] {
+  const from = start.charCodeAt(0);
+  const to = end.charCodeAt(0);
+  const letters: string[] = [];
+  for (let code = from; code <= to; code++) {
+    letters.push(String.fromCharCode(code));
+  }
+  return letters;
+}
+
+export function compileGutterWallEdges(
+  segments: readonly GutterWallSegment[],
+): ReadonlySet<BoardEdgeId> {
+  const edges = new Set<BoardEdgeId>();
+  for (const seg of segments) {
+    if (seg.axis === 'horizontal') {
+      const rowA = seg.rowLow;
+      const rowB = seg.rowLow + 1;
+      for (const col of colLetterRange(seg.colStart, seg.colEnd)) {
+        edges.add(toBoardEdgeId(`${col}${rowA}` as CellId, `${col}${rowB}` as CellId));
+      }
+    } else {
+      const colRight = String.fromCharCode(seg.colLeft.charCodeAt(0) + 1);
+      for (let row = seg.rowStart; row <= seg.rowEnd; row++) {
+        edges.add(
+          toBoardEdgeId(`${seg.colLeft}${row}` as CellId, `${colRight}${row}` as CellId),
+        );
+      }
+    }
+  }
+  return edges;
+}
+
+/** Declarative gutter wall runs — compiled to edge pairs at module load. */
+export const GRID_21X15_GUTTER_WALL_SEGMENTS: readonly GutterWallSegment[] = [
+  { axis: 'horizontal', rowLow: 2, colStart: 'H', colEnd: 'N' },
+  { axis: 'vertical', colLeft: 'G', rowStart: 5, rowEnd: 9 },
+  { axis: 'horizontal', rowLow: 6, colStart: 'F', colEnd: 'G' },
+  { axis: 'vertical', colLeft: 'G', rowStart: 12, rowEnd: 15 },
+  { axis: 'horizontal', rowLow: 6, colStart: 'A', colEnd: 'B' },
+  { axis: 'vertical', colLeft: 'N', rowStart: 5, rowEnd: 9 },
+  { axis: 'vertical', colLeft: 'N', rowStart: 12, rowEnd: 15 },
+  { axis: 'horizontal', rowLow: 6, colStart: 'O', colEnd: 'P' },
+  { axis: 'horizontal', rowLow: 6, colStart: 'T', colEnd: 'U' },
+] as const;
+
+export const GRID_21X15_GUTTER_WALLS: ReadonlySet<BoardEdgeId> = compileGutterWallEdges(
+  GRID_21X15_GUTTER_WALL_SEGMENTS,
+);
+
+export function isGutterWallEdge(a: CellId, b: CellId): boolean {
+  return GRID_21X15_GUTTER_WALLS.has(toBoardEdgeId(a, b));
+}
+
+/** Sorted [cellA, cellB] pairs for rendering and GDD sync. */
+export function listGutterWallEdgePairs(): readonly (readonly [CellId, CellId])[] {
+  return [...GRID_21X15_GUTTER_WALLS]
+    .sort()
+    .map((edgeId) => {
+      const sep = edgeId.indexOf('|');
+      const a = edgeId.slice(0, sep) as CellId;
+      const b = edgeId.slice(sep + 1) as CellId;
+      return [a, b] as const;
+    });
+}
+
+function isGridFurnitureObstacle(cellId: CellId, col: number, row: number): boolean {
+  const isTableSquare = cellId === 'K6' || cellId === 'K7' || cellId === 'K8';
+  const isStatueSquare = cellId === 'A2' || cellId === 'A3' || cellId === 'B2' || cellId === 'B3';
+  const isFireplaceSquare = col >= 7 && col <= 13 && row >= 0 && row <= 2;
+  const isBookshelfSquare = cellId === 'U3' || cellId === 'U4' || cellId === 'U5' || cellId === 'U6';
+  const isStaircaseSquare = col >= 2 && col <= 6 && row >= 0 && row <= 1;
+  const isSmallCouchSquare = cellId === 'O5' || cellId === 'O6' || cellId === 'P6';
+  const isBigCouchSquare = col >= 19 && col <= 20 && row >= 2 && row <= 6;
+  const isCouchSquare = isSmallCouchSquare || isBigCouchSquare;
+  const isVaseSquare = cellId === 'E1';
+  const isWritingTableSquare = col >= 16 && col <= 18 && row === 14;
+  const isPaintingSquare = cellId === 'F6' || cellId === 'G6' || cellId === 'G5';
+  const isPianoSquare = col >= 2 && col <= 4 && row >= 4 && row <= 6;
+
+  return (
+    isTableSquare ||
+    isStatueSquare ||
+    isFireplaceSquare ||
+    isBookshelfSquare ||
+    isStaircaseSquare ||
+    isCouchSquare ||
+    isVaseSquare ||
+    isWritingTableSquare ||
+    isPaintingSquare ||
+    isPianoSquare
+  );
+}
+
 const gridCells: GridCell[] = [];
 
 // Generate a perfectly clean, uniform 21x15 grid of squares with Mahogany table obstacle at K8-K10
@@ -486,30 +605,11 @@ for (let r = 0; r < 15; r++) {
     for (const n of neighbors) {
       if (n.c >= 0 && n.c < 21 && n.r >= 0 && n.r < 15) {
         const neighborId = indexToCoord(n.c, n.r);
-        const isNeighborTable       = neighborId === 'K6' || neighborId === 'K7' || neighborId === 'K8';
-        const isNeighborStatue      = neighborId === 'A2' || neighborId === 'A3' || neighborId === 'B2' || neighborId === 'B3';
-        const isNeighborFireplace   = (n.c >= 7 && n.c <= 13) && (n.r >= 0 && n.r <= 2);
-        const isNeighborBookshelf   = neighborId === 'U3' || neighborId === 'U4' || neighborId === 'U5' || neighborId === 'U6';
-        const isNeighborStaircase   = (n.c >= 2 && n.c <= 6) && (n.r >= 0 && n.r <= 1);
-        const isNeighborSmallCouch  = neighborId === 'O5' || neighborId === 'O6' || neighborId === 'P6';
-        const isNeighborBigCouch    = (n.c >= 19 && n.c <= 20) && (n.r >= 2 && n.r <= 6);
-        const isNeighborCouch       = isNeighborSmallCouch || isNeighborBigCouch;
-        const isNeighborVase        = neighborId === 'E1';
-        const isNeighborWritingTable = (n.c >= 16 && n.c <= 18) && n.r === 14;
-        const isNeighborPainting    = neighborId === 'F6' || neighborId === 'G6' || neighborId === 'G5';
-        const isNeighborPiano       = (n.c >= 2 && n.c <= 4) && (n.r >= 4 && n.r <= 6);
 
         if (
-          !isTableSquare       && !isNeighborTable       &&
-          !isStatueSquare      && !isNeighborStatue      &&
-          !isFireplaceSquare   && !isNeighborFireplace   &&
-          !isBookshelfSquare   && !isNeighborBookshelf   &&
-          !isStaircaseSquare   && !isNeighborStaircase   &&
-          !isCouchSquare       && !isNeighborCouch       &&
-          !isVaseSquare        && !isNeighborVase        &&
-          !isWritingTableSquare && !isNeighborWritingTable &&
-          !isPaintingSquare    && !isNeighborPainting    &&
-          !isPianoSquare       && !isNeighborPiano
+          !isGridFurnitureObstacle(cellId, c, r) &&
+          !isGridFurnitureObstacle(neighborId, n.c, n.r) &&
+          !isGutterWallEdge(cellId, neighborId)
         ) {
           adjacentCells.push(neighborId);
         }

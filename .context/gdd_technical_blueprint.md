@@ -16,7 +16,8 @@
 |--------|--------|----------------|-----------|
 | Movement graph | 21×15 orthogonal | `GRID_21X15` | ✅ |
 | Start chairs | 12 cells around table | `GRID_21X15_DINING_CHAIR_CELLS` | ✅ |
-| Furniture obstacles | Block adjacency | 71 cells — `GRID_21X15_OBSTACLE_CATALOG` | ✅ |
+| Furniture obstacles | Block cell adjacency | 71 cells — `GRID_21X15_OBSTACLE_CATALOG` | ✅ |
+| Gutter walls | Block edge crossing only | 33 edges — `GRID_21X15_GUTTER_WALLS` | ✅ |
 | Trap triggers | 5 skull mechanisms | 5 `TrapId` on grid | ✅ |
 | Secret passages | 5 teleport nodes | `A15` `U15` `E10` `Q10` `K14` when **ADVANCED** + `SECRET_PASSAGES` | ✅ |
 | Exit | Front door | `K1` | ✅ |
@@ -67,7 +68,7 @@
 | File | Contents |
 |------|----------|
 | `data/gdd_trap_deck.json` | Full deck catalog + `not_in_deck` notes |
-| `data/gdd_board_nodes.json` | Chairs, exit, traps, obstacles (71), secret passage cells |
+| `data/gdd_board_nodes.json` | Chairs, exit, traps, furniture obstacles (71), gutter walls (33), secret passage cells |
 
 **Engine catalogs:** `GRID_21X15_OBSTACLE_CATALOG`, `buildDeck()`, `registerBuiltinRuleModules()`.
 

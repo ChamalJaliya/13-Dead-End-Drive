@@ -161,16 +161,16 @@ describe('WebSocket Session Manager & Room Lifecycle', () => {
         payload: {
           characterId: 'SMOTHERS',
           fromCell:    'RC_1',
-          toCell:      'RC_2',
+          toCell:      'HALL_1',
           pipsUsed:    1,
-          path:        ['RC_1', 'RC_2'],
+          path:        ['RC_1', 'HALL_1'],
         },
       };
 
       const finalState = await manager.handlePlayerAction(socketId, moveEvent);
 
       expect(finalState.subPhase).toBe('SECOND_MOVE');
-      expect(finalState.characters['SMOTHERS']?.position).toBe('RC_2');
+      expect(finalState.characters['SMOTHERS']?.position).toBe('HALL_1');
 
       const savedState = await manager.getRoomState(roomId);
       expect(savedState).toEqual(finalState);

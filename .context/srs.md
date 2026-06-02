@@ -48,7 +48,7 @@
   5. `pipsUsed <= movementDie` (cannot exceed the rolled die value)
   6. Every consecutive pair `[path[i], path[i+1]]` is a declared edge in
      `GridCell.adjacentCells` (board adjacency graph — no coordinate arithmetic)
-  7. No intermediate cell (cells except the destination) is occupied by another character
+  7. The destination cell must not be occupied by another character (passing over other pawns on intermediate steps is allowed)
   8. The destination cell exists in the board map
 
   Any violation throws `EngineError` with the appropriate `SocketErrorCode` and
@@ -56,7 +56,9 @@
 
 > **Implementation note:** Spatial topology is encoded as adjacency lists on each
 > `GridCell.adjacentCells: CellId[]`. There is no coordinate grid — all path
-> validation is graph traversal, not arithmetic. See `src/engine/moveCharacter.ts`.
+> validation is graph traversal, not arithmetic. Static **gutter walls** remove
+> specific edges (33 on `GRID_21X15`) without blocking cell occupancy.
+> See `src/engine/moveCharacter.ts`.
 
 ---
 

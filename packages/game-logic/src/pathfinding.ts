@@ -49,6 +49,13 @@ function isDestinationAllowed(
   return true;
 }
 
+function isOccupiedByOther(
+  cell: { readonly occupants: readonly CharacterId[] },
+  charId: CharacterId,
+): boolean {
+  return cell.occupants.some((occ) => occ !== charId);
+}
+
 function openingChairPhaseBlocksMover(ctx: MovementPreviewContext): boolean {
   return (
     ctx.boardVersion === 'GRID_21X15' &&
@@ -103,10 +110,9 @@ export function findValidPath(
         return;
       }
 
-      const isIntermediate = path.length < pips;
-      if (isIntermediate) {
-        const blocked = nextCell.occupants.some((occ) => occ !== charId);
-        if (blocked) return;
+      // May pass through occupied cells; only the landing square must be empty of other pawns.
+      if (path.length === pips && isOccupiedByOther(nextCell, charId)) {
+        return;
       }
       queue.push([...path, nextId]);
     };
@@ -164,10 +170,8 @@ export function getReachableCells(
         return;
       }
 
-      const isIntermediate = path.length < pips;
-      if (isIntermediate) {
-        const blocked = nextCell.occupants.some((occ) => occ !== charId);
-        if (blocked) return;
+      if (path.length === pips && isOccupiedByOther(nextCell, charId)) {
+        return;
       }
       queue.push([...path, nextId]);
     };

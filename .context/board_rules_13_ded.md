@@ -88,7 +88,9 @@ Additionally: cannot land on **trap zones** while any pawn remains on red chairs
 ## Movement constraints
 
 - Orthogonal only on `GRID_21X15`; full die value must be used.
-- No passing through or landing on other pawns or **furniture obstacles** (71 cells — see `GRID_21X15_OBSTACLE_CATALOG` / `data/gdd_board_nodes.json`).
+- At most **one pawn per square** — you may **pass over** other guests on the way, but you cannot **land** on a square that already holds another pawn.
+- No entering or passing through **furniture obstacles** (71 cells — see `GRID_21X15_OBSTACLE_CATALOG` / `data/gdd_board_nodes.json`).
+- **Gutter walls** block crossing specific edges between playable cells (33 edges — see `GRID_21X15_GUTTER_WALLS` / `data/gdd_board_nodes.json`). Adjacent squares remain walkable; only the gutter crossing is blocked.
 - **Red chairs / trap zones:** see Opening chair phase above.
 - **Secret passages (STANDARD):** off. **ADVANCED** + `SECRET_PASSAGES`: teleport between `A15`, `U15`, `E10`, `Q10`, `K14` for 1 pip.
 
@@ -124,6 +126,7 @@ Additionally: cannot land on **trap zones** while any pawn remains on red chairs
 | Hand masking | `filterStateForPlayer` (owner sees own rooting + hand) |
 | Stale chair repair | `repairGridChairSpawns`, `gridChairSpawnNeedsRepair` |
 | Obstacle catalog | `GRID_21X15_OBSTACLE_CATALOG` |
+| Gutter walls | `GRID_21X15_GUTTER_WALLS`, `GRID_21X15_GUTTER_WALL_SEGMENTS` |
 | Rule context | `buildRuleContext`, `packages/engine/src/rules/` |
 | Lobby rules | `setLobbyRuleSettings`, `updateLobbyRules` (local host) |
 

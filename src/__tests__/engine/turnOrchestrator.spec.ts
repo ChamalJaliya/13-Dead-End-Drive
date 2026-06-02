@@ -132,8 +132,8 @@ describe('turnOrchestrator', () => {
         pipsRemaining: 1,
       };
 
-      // Move SMOTHERS from RC_1 to RC_2
-      const event = makeMoveEvent('SMOTHERS', 'RC_1', 'RC_2', 1, PLAYER_A_ID);
+      // Move SMOTHERS from RC_1 to HALL_1 (RC_2 is occupied by DUSTY)
+      const event = makeMoveEvent('SMOTHERS', 'RC_1', 'HALL_1', 1, PLAYER_A_ID);
       const nextState = processTurn(rolledState, event);
 
       expect(nextState.subPhase).toBe('SECOND_MOVE');
@@ -155,10 +155,14 @@ describe('turnOrchestrator', () => {
             ...state.board.RC_3!,
             occupants: [],
           },
+          RC_4: {
+            ...state.board.RC_4!,
+            occupants: [],
+          },
         },
       };
 
-      // Move DUSTY from RC_2 to RC_4 (die2 = 2 pips)
+      // Move DUSTY from RC_2 to RC_4 via RC_3 (die2 = 2 pips; may pass over CHARITY on RC_3)
       const event: SocketEvent = {
         type:      'MOVE_PAWN',
         eventId:   'evt-orch-move-annette',

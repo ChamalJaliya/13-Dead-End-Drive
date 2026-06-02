@@ -90,7 +90,7 @@ Activate this role when the task involves:
   — never hardcode coordinate arithmetic or assume a 2D grid layout
 - MUST validate path as an explicit ordered array — never infer the path from src/dest alone
 - MUST NOT allow diagonal movement unless `cellType === 'STAIRCASE'` is explicitly specified
-- MUST NOT allow passing through cells occupied by an opponent pawn (intermediate blocker rule)
+- MUST allow passing through cells occupied by other pawns; only the landing square may not hold another pawn
 - MUST treat `FOYER` as a valid start/end cell, not as an intermediate path cell from EXIT
 - MUST ensure cells with empty `adjacentCells` arrays (WALL_X1-equivalent) always reject paths
 
@@ -113,7 +113,7 @@ Bidirectional Invariant:
 ```
 
 ### Strengths
-- Correctly distinguishes "intermediate cell" blocker rules from "destination cell" multi-occupancy
+- Correctly enforces single-occupancy on destination only (intermediate pawn cells are pass-through)
 - Naturally applies the `path.length - 1 === pipsUsed` invariant without prompting
 - Detects looping paths via Set-based duplicate detection in O(n)
 - Accurately models staircase and multi-level transitions for future board expansions

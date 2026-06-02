@@ -3,7 +3,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Protocol : Read this file BEFORE beginning any implementation phase.
 #            Update this file IMMEDIATELY upon completing any phase gate.
-# Last sync: 2026-06-01 — G01 rules, RFC 007 (phases 1–5), GDD JSON sync, 160 tests
+# Last sync: 2026-06-01 — G01 rules, RFC 007 (phases 1–5), gutter walls (33 edges), GDD JSON sync, 181 tests
 # ═══════════════════════════════════════════════════════════════════════════════
 
 ---
@@ -179,11 +179,11 @@
 
 ## Test Suite Scoreboard
 
-**Last run:** `npx vitest run --reporter=verbose` → **160/160 GREEN** (41 files)
+**Last run:** `npx vitest run --reporter=verbose` → **181/181 GREEN** (45 files)
 
 | Area | Spec files (representative) |
 |------|----------------------------|
-| Engine | `moveCharacter`, `trapEvaluator`, `winCondition`, `turnOrchestrator`, `movementRulesGrid`, `gameInitializer`, `twoPlayerVisibleRooting`, `secretPassagesModule`, `ruleContext`, `gddTrapDeckSync`, `gridObstacleCatalog`, `cardDeck` |
+| Engine | `moveCharacter`, `trapEvaluator`, `winCondition`, `turnOrchestrator`, `movementRulesGrid`, `gameInitializer`, `twoPlayerVisibleRooting`, `secretPassagesModule`, `ruleContext`, `gddTrapDeckSync`, `gridObstacleCatalog`, `gutterWalls`, `cardDeck` |
 | Network | `broadcastPipeline`, `broadcastPipeline.secret`, `sessionManager`, `routePlayerEvent` |
 | Client | `GameBoard`, `HandPanel`, `DeckWidget`, `DetectiveWidget`, `HUD3DConsole`, `actionDispatcher`, `kinematicsEngine` |
 | Fixtures | `threePlayerSandbox` |
@@ -207,6 +207,7 @@
 | HUD hand/deck/detective widgets | ✅ |
 | Secret passages on grid | ✅ ADVANCED module |
 | Furniture obstacle catalog in GDD | ✅ `gdd_board_nodes.json` |
+| Gutter walls (33 edges) in GDD | ✅ `gdd_board_nodes.json` |
 | Trap deck GDD sync | ✅ `gdd_trap_deck.json` |
 | Trap draw board squares | 🔲 Excluded |
 | Portrait / SP as deck cards | 🔲 Not in product (doubles / board module) |

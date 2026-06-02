@@ -89,8 +89,9 @@ Once all twelve guests are off the red chairs, normal movement and combined dice
 
 - Move **orthogonally** (up, down, left, right) — no diagonals.  
 - You must use the **exact** number of spaces rolled (no partial moves).  
-- You cannot move **through** or **onto** another guest.  
+- You may **jump over** other guests (pass through their square), but only **one pawn per square** — you cannot **land** on a guest who is already there.  
 - You cannot move through **furniture obstacles** (piano, tables, etc.).  
+- **Gutter walls** (stone bars between tiles) block crossing that gap — you can still stand on squares on either side, but you cannot step through the wall.  
 - The **front door** is cell **K1** on the board map.
 
 ### Split vs combined (after the table is clear)

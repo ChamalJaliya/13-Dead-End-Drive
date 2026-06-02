@@ -267,7 +267,7 @@ Ensure firewall allows **2567** (and **8080** for UI).
 # TypeScript
 npm run typecheck
 
-# Game + client tests (expect 160 passing)
+# Game + client tests (expect 181 passing)
 npx vitest run --reporter=verbose
 
 # Bot service tests (install dev deps once)

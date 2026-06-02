@@ -9,6 +9,7 @@ import type { GridCell } from '../../types/entities.js';
 import {
   CELL_COORDINATES,
   GRID_21X15_DINING_CHAIR_CELLS,
+  GRID_21X15_GUTTER_WALLS,
 } from '../../engine/boardDefinition.js';
 
 const GRID_DINING_CHAIR_SET = new Set<string>(GRID_21X15_DINING_CHAIR_CELLS);
@@ -251,6 +252,40 @@ function paintCellTile(
   }
 }
 
+function drawGutterWalls2D(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  ts: number,
+): void {
+  if (state.boardVersion !== 'GRID_21X15') return;
+
+  ctx.save();
+  ctx.strokeStyle = 'hsl(30, 18%, 32%)';
+  ctx.lineWidth = Math.max(4, ts * 0.14);
+  ctx.lineCap = 'square';
+
+  for (const edgeId of GRID_21X15_GUTTER_WALLS) {
+    const sep = edgeId.indexOf('|');
+    const cellA = edgeId.slice(0, sep) as CellId;
+    const cellB = edgeId.slice(sep + 1) as CellId;
+    const fromCoord = cellGridCoord(state, cellA);
+    const toCoord = cellGridCoord(state, cellB);
+    if (!fromCoord || !toCoord) continue;
+
+    const x1 = fromCoord.x * ts + ts / 2;
+    const y1 = fromCoord.y * ts + ts / 2;
+    const x2 = toCoord.x * ts + ts / 2;
+    const y2 = toCoord.y * ts + ts / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
 export function renderBoard(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -362,6 +397,8 @@ export function renderBoard(
       pawnPickCells,
     );
   }
+
+  drawGutterWalls2D(ctx, state, ts);
 
   // Draw detective
   const detectiveStep = state.detectivePosition.currentStep;

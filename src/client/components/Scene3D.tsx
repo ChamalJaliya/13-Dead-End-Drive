@@ -25,6 +25,7 @@ import { Vase3D }         from './3d/Vase3D.js';
 import { WritingTable3D } from './3d/WritingTable3D.js';
 import { Painting3D }     from './3d/Painting3D.js';
 import { Piano3D }        from './3d/Piano3D.js';
+import { GutterWalls3D }  from './3d/GutterWall3D.js';
 import { HeirPortrait3D } from './3d/HeirPortrait3D.js';
 import { TrapFx3D } from './3d/TrapFx3D.js';
 import { EliminatedPawn3D } from './3d/EliminatedPawn3D.js';
@@ -677,6 +678,11 @@ function InnerScene({
         const [tx, tz] = toWorld(3, 5); // Column index 3 (D), Row index 5 (rank 10)
         return <Piano3D position={[tx, 0, tz]} rotation={0} />;
       })()}
+
+      {/* ── Gutter walls (edge blockers between playable cells) ── */}
+      {gameState.boardVersion === 'GRID_21X15' && (
+        <GutterWalls3D centerCol={centerCol} centerRow={centerRow} />
+      )}
 
       {/* ── 3D Mahogany Dining Chairs (same cells as pawn start / RED_CHAIR) ── */}
       {gameState.boardVersion === 'GRID_21X15' &&

@@ -73,9 +73,9 @@ describe('eventRouter', () => {
       payload: {
         characterId: 'SMOTHERS',
         fromCell: 'RC_1',
-        toCell: 'RC_2',
+        toCell: 'HALL_1',
         pipsUsed: 1,
-        path: ['RC_1', 'RC_2'],
+        path: ['RC_1', 'HALL_1'],
       },
     }, store);
 

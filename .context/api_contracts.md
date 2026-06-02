@@ -32,6 +32,7 @@ Living source of truth for public TypeScript interfaces, socket events, and enum
 | 2026-06-01 | Rules | RFC 007 Phase 4: `applyModuleLegalActions` in `enumerateLegalActions` | `legalActions.ts`, `rules/` |
 | 2026-06-01 | Rules | RFC 007 Phase 5: `EXTENDED_TRAP_DECK` → `buildExtendedDeck()` | `cardDeck.ts` |
 | 2026-06-01 | GDD | `GRID_21X15_OBSTACLE_CATALOG` (71 cells); `gdd_board_nodes.json` sync | `boardDefinition.ts`, `data/` |
+| 2026-06-01 | GDD | `GRID_21X15_GUTTER_WALLS` (33 edges), `BoardEdgeId`, `GutterWallSegment` | `boardDefinition.ts`, `data/gdd_board_nodes.json` |
 | 2026-06-01 | GDD | `gdd_trap_deck.json` mirrors `buildDeck()` counts | `data/gdd_trap_deck.json` |
 | 2026-06-01 | Client | `setLobbyRuleSettings`, `LobbyRulesPanel`, `updateLobbyRules` | `useGameStore.ts`, `localMultiplayerClient.ts` |
 

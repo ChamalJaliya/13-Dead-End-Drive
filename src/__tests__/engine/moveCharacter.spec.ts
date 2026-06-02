@@ -89,16 +89,20 @@ describe('moveCharacter', () => {
     });
 
     it('allows any player to move any character (including opponents)', () => {
-      // PLAYER_A legally moves DUSTY (who is controlled by PLAYER_B)
+      // PLAYER_A legally moves DUSTY (who is controlled by PLAYER_B), passing over SMOTHERS on RC_1
+      const stateWithTwoPips = {
+        ...state,
+        lastDiceRoll: makeDiceRoll(2, 2, PLAYER_A_ID),
+      };
       const event = makeMovePawnEvent({
         characterId: 'DUSTY',
         fromCell:    'RC_2',
-        toCell:      'RC_3',
-        path:        ['RC_2', 'RC_3'],
-        pipsUsed:    1,
+        toCell:      'HALL_1',
+        path:        ['RC_2', 'RC_1', 'HALL_1'],
+        pipsUsed:    2,
       });
-      const nextState = moveCharacter(state, event);
-      expect(nextState.characters.DUSTY!.position).toBe('RC_3');
+      const nextState = moveCharacter(stateWithTwoPips, event);
+      expect(nextState.characters.DUSTY!.position).toBe('HALL_1');
     });
 
     it('throws INVALID_MOVE when attempting to move an ELIMINATED character', () => {
@@ -117,12 +121,12 @@ describe('moveCharacter', () => {
         ...state,
         lastDiceRoll: makeDiceRoll(1, 2, PLAYER_A_ID),
       };
-      const event = makeMovePawnEvent({ toCell: 'RC_2', path: ['RC_1', 'RC_2'], pipsUsed: 1 });
+      const event = makeMovePawnEvent({ toCell: 'HALL_1', path: ['RC_1', 'HALL_1'], pipsUsed: 1 });
       const nextState = moveCharacter(stateWith1, event);
 
       expect(nextState).not.toBe(stateWith1);
       expect(stateWith1.characters.SMOTHERS!.position).toBe('RC_1');
-      expect(nextState.characters.SMOTHERS!.position).toBe('RC_2');
+      expect(nextState.characters.SMOTHERS!.position).toBe('HALL_1');
       expect(nextState.characters.SMOTHERS!.isOnRedChair).toBe(false);
     });
 

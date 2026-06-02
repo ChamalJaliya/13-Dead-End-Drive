@@ -10,7 +10,7 @@ import { useUiStore } from '../store/useUiStore.js';
 import type { GameState } from '../../types/game-state.js';
 import type { PlayerId } from '../../types/enums.js';
 import { AUNT_AGATHA_DISPLAY_NAME, CHARACTER_DATA } from '../../engine/gameInitializer.js';
-import { CHARACTER_PORTRAITS } from '../characterAssets.js';
+import { AUNT_AGATHA_PORTRAIT, CHARACTER_PORTRAITS } from '../characterAssets.js';
 import { EstateConsole } from './EstateConsole.js';
 import { HandPanel } from './HandPanel.js';
 import { DeckWidget } from './DeckWidget.js';
@@ -33,7 +33,9 @@ export function HUD3D({ gameState }: HUD3DProps) {
   const heirData = !isAgatha && currentHeirId ? CHARACTER_DATA[currentHeirId] : null;
   const heirName = isAgatha ? AUNT_AGATHA_DISPLAY_NAME : (heirData?.displayName ?? 'No Heir Selected');
   const heirColor = isAgatha ? '#b45309' : (heirData?.pawnColor ?? '#b45309');
-  const heirPortraitUrl = !isAgatha && currentHeirId ? CHARACTER_PORTRAITS[currentHeirId] : '';
+  const heirPortraitUrl = isAgatha
+    ? AUNT_AGATHA_PORTRAIT
+    : (currentHeirId ? CHARACTER_PORTRAITS[currentHeirId] : '');
 
   return (
     <>

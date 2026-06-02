@@ -23,7 +23,7 @@ Living project knowledge for **13 Dead End Drive**. Read before mutating code (s
 
 | File | Synced with |
 |------|-------------|
-| [gdd_board_nodes.json](../data/gdd_board_nodes.json) | `GRID_21X15_*`, obstacles, secret passages |
+| [gdd_board_nodes.json](../data/gdd_board_nodes.json) | `GRID_21X15_*`, furniture obstacles, gutter walls, secret passages |
 | [gdd_trap_deck.json](../data/gdd_trap_deck.json) | `buildDeck()` — 10 det / 4 wild / 5 single / 10 dual |
 
 ## RFCs (`/context/rfc/`)

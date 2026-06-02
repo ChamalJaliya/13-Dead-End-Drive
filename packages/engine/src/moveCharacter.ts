@@ -135,6 +135,14 @@ export function moveCharacter(state: GameState, event: MovePawnEvent): GameState
     );
   }
 
+  const otherOnDestination = destinationCell.occupants.filter((id) => id !== characterId);
+  if (otherOnDestination.length > 0) {
+    throw new EngineError(
+      'INVALID_MOVE',
+      `Cannot land on '${toCell}' — another pawn is already there.`,
+    );
+  }
+
   // ── Guard 7: Combined dice only after the table is clear ───────────────────
   if (
     state.boardVersion === 'GRID_21X15' &&
@@ -393,16 +401,7 @@ function validatePathContiguity(
       );
     }
 
-    // Blocker check on intermediate cells (every cell except the start and final target)
-    if (i < path.length - 2) {
-      const occupiedByOther = nextCell.occupants.some((occ) => occ !== moverId);
-      if (occupiedByOther) {
-        throw new EngineError(
-          'INVALID_MOVE',
-          `Movement blocked: cell '${nextId}' is already occupied.`
-        );
-      }
-    }
+    // Pawns may pass over other guests on intermediate steps; destination occupancy is validated above.
   }
 }
 
